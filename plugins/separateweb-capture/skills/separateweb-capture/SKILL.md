@@ -21,9 +21,19 @@ Optional flags:
 
 ```bash
 --out <dir>
+--path <dir>
 --width <px>
 --height <px>
 ```
+
+Patch selection:
+
+```bash
+node scripts/capture.mjs select captures/<jobId>/manifest.json
+node scripts/capture.mjs patch captures/<jobId>/manifest.json --items 1,3,5 --path /absolute/output/path
+```
+
+Use `--path` when the user asks which machine path to place the patch into. `--out` remains supported as an alias.
 
 Default output:
 

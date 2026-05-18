@@ -32,5 +32,10 @@ captures/<jobId>/full-page.png
 captures/<jobId>/manifest.json
 captures/<jobId>/items/*.png
 ```
-# SeparateWeb
-# SeparateWeb
+
+เลือก item แล้วสร้าง patch ลง path ในเครื่อง:
+
+```bash
+node scripts/capture.mjs select captures/<jobId>/manifest.json
+node scripts/capture.mjs patch captures/<jobId>/manifest.json --items 1,3,5 --path /Users/onecrop/Desktop/patches
+```

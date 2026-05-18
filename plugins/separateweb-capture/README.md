@@ -18,3 +18,10 @@ npm run capture -- https://example.com
 ```bash
 npm run capture -- https://example.com -- --out captures --width 1440 --height 1000
 ```
+
+## Select and patch
+
+```bash
+node scripts/capture.mjs select captures/<jobId>/manifest.json
+node scripts/capture.mjs patch captures/<jobId>/manifest.json --items 1,3,5 --path /Users/onecrop/Desktop/patches
+```

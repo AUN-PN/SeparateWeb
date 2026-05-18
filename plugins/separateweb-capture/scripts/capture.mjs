@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { randomUUID } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
-import { basename, join, resolve } from 'node:path'
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { basename, dirname, join, resolve } from 'node:path'
 import { chromium } from 'playwright'
 import sharp from 'sharp'
 
@@ -12,10 +12,14 @@ const MAX_ITEMS = 80
 const usage = () => {
   console.log(`Usage:
   separateweb capture <url> [--out <dir>] [--width <px>] [--height <px>]
+  separateweb select <manifest.json>
+  separateweb patch <manifest.json> --items <indexes> --path <dir>
   node scripts/capture.mjs capture <url>
 
 Example:
-  separateweb capture https://demo.separateweb.dev/orbit-store`)
+  separateweb capture https://demo.separateweb.dev/orbit-store
+  separateweb select captures/<jobId>/manifest.json
+  separateweb patch captures/<jobId>/manifest.json --items 1,3,5 --path /Users/onecrop/Desktop/patches`)
 }
 
 const fail = (message, code = 1) => {
@@ -24,11 +28,13 @@ const fail = (message, code = 1) => {
 }
 
 const parseArgs = (argv) => {
-  const [command, rawUrl, ...rest] = argv
+  const [command, rawTarget, ...rest] = argv
   const options = {
     command,
-    url: rawUrl,
+    target: rawTarget,
+    url: rawTarget,
     outDir: DEFAULT_OUT_DIR,
+    items: '',
     width: DEFAULT_VIEWPORT.width,
     height: DEFAULT_VIEWPORT.height,
     help: argv.includes('--help') || argv.includes('-h')
@@ -46,6 +52,20 @@ const parseArgs = (argv) => {
     if (arg === '--out') {
       if (!next) fail('--out requires a directory')
       options.outDir = next
+      index += 1
+      continue
+    }
+
+    if (arg === '--path') {
+      if (!next) fail('--path requires a directory')
+      options.outDir = next
+      index += 1
+      continue
+    }
+
+    if (arg === '--items') {
+      if (!next) fail('--items requires indexes, for example 1,3,5')
+      options.items = next
       index += 1
       continue
     }
@@ -94,6 +114,122 @@ const normalizeDimension = (value, name) => {
   }
 
   return Math.floor(value)
+}
+
+const readManifest = async (manifestPath) => {
+  if (!manifestPath) fail('manifest.json path is required')
+
+  try {
+    return JSON.parse(await readFile(resolve(process.cwd(), manifestPath), 'utf8'))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown manifest read error'
+    fail(`Cannot read manifest: ${message}`)
+  }
+}
+
+const formatItemLine = (item, index) => {
+  const bounds = item.bounds
+    ? `${item.bounds.width}x${item.bounds.height}+${item.bounds.x}+${item.bounds.y}`
+    : 'unknown-bounds'
+  const label = item.label || item.selector || item.id || 'untitled'
+
+  return `${index + 1}. [${item.kind}] ${label} (${bounds})`
+}
+
+const listManifestItems = async (manifestPath) => {
+  const manifest = await readManifest(manifestPath)
+  const items = Array.isArray(manifest.items) ? manifest.items : []
+
+  console.log(`Manifest: ${resolve(process.cwd(), manifestPath)}`)
+  console.log(`URL: ${manifest.url || ''}`)
+  console.log(`Blocks: ${items.length}`)
+
+  items.forEach((item, index) => {
+    console.log(formatItemLine(item, index))
+  })
+}
+
+const parseItemIndexes = (value, max) => {
+  if (!value) fail('--items is required, for example --items 1,3,5')
+  if (value === 'all') {
+    return Array.from({ length: max }, (_, index) => index)
+  }
+
+  const indexes = value
+    .split(',')
+    .map((part) => Number(part.trim()))
+    .filter((index) => Number.isInteger(index))
+
+  if (!indexes.length) fail('--items must contain indexes, for example 1,3,5')
+
+  const unique = [...new Set(indexes)]
+
+  unique.forEach((index) => {
+    if (index < 1 || index > max) {
+      fail(`Item index out of range: ${index}`)
+    }
+  })
+
+  return unique.map((index) => index - 1)
+}
+
+const resolveManifestAssetPath = (manifestPath, imagePath) => {
+  if (!imagePath) return ''
+  if (imagePath.startsWith('/')) return imagePath
+
+  return resolve(dirname(resolve(process.cwd(), manifestPath)), imagePath)
+}
+
+const createPatch = async (options) => {
+  const manifestPath = options.target
+  const manifest = await readManifest(manifestPath)
+  const items = Array.isArray(manifest.items) ? manifest.items : []
+  const selectedIndexes = parseItemIndexes(options.items, items.length)
+  const outputRoot = options.outDir === DEFAULT_OUT_DIR ? 'patches' : options.outDir
+  const patchId = `${manifest.jobId || 'patch'}-${new Date().toISOString().replace(/[:.]/g, '-')}`
+  const outputDir = resolve(process.cwd(), outputRoot, patchId)
+  const assetDir = join(outputDir, 'items')
+  const selectedItems = []
+
+  await mkdir(assetDir, { recursive: true })
+
+  for (const selectedIndex of selectedIndexes) {
+    const item = items[selectedIndex]
+    const sourceImagePath = resolveManifestAssetPath(manifestPath, item.image?.path)
+    const imageName = `${String(selectedIndex + 1).padStart(3, '0')}-${item.id || `item-${selectedIndex + 1}`}.png`
+    const imagePath = join(assetDir, imageName)
+
+    if (sourceImagePath) {
+      await copyFile(sourceImagePath, imagePath)
+    }
+
+    selectedItems.push({
+      index: selectedIndex + 1,
+      ...item,
+      image: {
+        ...item.image,
+        path: imagePath
+      }
+    })
+  }
+
+  const patchManifestPath = join(outputDir, 'patch.json')
+  const patchManifest = {
+    patchId,
+    sourceManifest: resolve(process.cwd(), manifestPath),
+    sourceUrl: manifest.url || '',
+    createdAt: new Date().toISOString(),
+    totalItems: selectedItems.length,
+    items: selectedItems
+  }
+
+  await writeFile(patchManifestPath, `${JSON.stringify(patchManifest, null, 2)}\n`)
+
+  return {
+    outputDir,
+    patchManifestPath,
+    totalItems: selectedItems.length
+  }
 }
 
 const slugFromUrl = (url) => {
@@ -301,6 +437,20 @@ const main = async () => {
 
   if (options.help || !options.command) {
     usage()
+    return
+  }
+
+  if (options.command === 'select') {
+    await listManifestItems(options.target)
+    return
+  }
+
+  if (options.command === 'patch' || options.command === 'create') {
+    const result = await createPatch(options)
+
+    console.log(`Patch: ${result.patchManifestPath}`)
+    console.log(`Output: ${result.outputDir}`)
+    console.log(`Items: ${result.totalItems}`)
     return
   }
 
