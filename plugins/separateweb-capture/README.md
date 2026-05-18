@@ -16,7 +16,7 @@ npm run capture -- https://example.com
 
 ## npm CLI
 
-ติดตั้ง local:
+ติดตั้งจากโฟลเดอร์นี้:
 
 ```bash
 npm install

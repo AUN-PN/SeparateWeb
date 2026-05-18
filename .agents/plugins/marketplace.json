@@ -1,7 +1,7 @@
 {
-  "name": "separateweb-local",
+  "name": "separateweb",
   "interface": {
-    "displayName": "SeparateWeb Local"
+    "displayName": "SeparateWeb"
   },
   "plugins": [
     {
