@@ -33,3 +33,4 @@ captures/<jobId>/manifest.json
 captures/<jobId>/items/*.png
 ```
 # SeparateWeb
+# SeparateWeb
