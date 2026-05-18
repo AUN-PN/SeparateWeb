@@ -34,13 +34,6 @@ After adding the marketplace, install or enable `SeparateWeb Capture` from the C
 
 ## Install As A Local Skill
 
-Requirements:
-
-```text
-Node.js >=18
-npm with npx
-```
-
 Install the skill payload with `npx`:
 
 ```bash
