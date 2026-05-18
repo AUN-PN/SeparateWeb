@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
 
 export const captureTextlessPage = async (page, outputPath) => {
-  await page.addStyleTag({
+  const styleHandle = await page.addStyleTag({
     content: `
       body, body * {
         color: transparent !important;
@@ -26,10 +26,14 @@ export const captureTextlessPage = async (page, outputPath) => {
     `
   })
 
-  return page.screenshot({
-    fullPage: true,
-    path: outputPath
-  })
+  try {
+    return await page.screenshot({
+      fullPage: true,
+      path: outputPath
+    })
+  } finally {
+    await styleHandle.evaluate((node) => node.remove()).catch(() => undefined)
+  }
 }
 
 export const shouldHideInnerContent = (item) => {
@@ -239,7 +243,7 @@ export const captureInnerHiddenPage = async (page, item) => {
   }
 }
 
-export const captureIsolatedItemPage = async (page, item) => {
+export const captureIsolatedItemPage = async (page, item, options = {}) => {
   if (!item.captureId || !shouldIsolateItem(item)) return null
 
   await page.evaluate(({ captureId, hideChildren, hideOuterEffects }) => {
@@ -335,6 +339,21 @@ export const captureIsolatedItemPage = async (page, item) => {
         visibility: hidden !important;
         opacity: 0 !important;
       }
+
+      ${options.hideText ? `
+      [data-separateweb-isolate],
+      [data-separateweb-isolate] *,
+      [data-separateweb-isolate]::before,
+      [data-separateweb-isolate]::after,
+      [data-separateweb-isolate-descendant],
+      [data-separateweb-isolate-descendant]::before,
+      [data-separateweb-isolate-descendant]::after {
+        color: transparent !important;
+        text-shadow: none !important;
+        -webkit-text-fill-color: transparent !important;
+        caret-color: transparent !important;
+      }
+      ` : ''}
     `
   })
 

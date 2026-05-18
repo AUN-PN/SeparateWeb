@@ -220,12 +220,13 @@ export const capturePage = async (browser, url, outputDir, options) => {
       const imagePath = join(kindDir, imageName)
       const textImagePath = join(textKindDir, imageName)
       const mediaSource = await readMediaSource(item)
-      const isolatedScreenshotBuffer = await captureIsolatedItemPage(page, item)
+      const isolatedScreenshotBuffer = await captureIsolatedItemPage(page, item, { hideText: true })
       const itemScreenshotBuffer = isolatedScreenshotBuffer || await captureInnerHiddenPage(page, item) || textlessScreenshotBuffer
       const cornerRadii = normalizeCornerRadii(item.cornerRadii, cropWidth, cropHeight)
       const maskRadii = visualCornerRadii(item, cornerRadii, cropWidth, cropHeight)
       const useBrowserShape = Boolean(isolatedScreenshotBuffer) && shouldUseBrowserShape(item)
       const mask = useBrowserShape ? null : roundedMask(cropWidth, cropHeight, maskRadii)
+      const textMask = roundedMask(cropWidth, cropHeight, maskRadii)
 
       await mkdir(kindDir, { recursive: true })
       const crop = mediaSource
@@ -262,11 +263,11 @@ export const capturePage = async (browser, url, outputDir, options) => {
           height: cropHeight
         })
 
-      if (mask) {
+      if (textMask) {
         textCrop
           .ensureAlpha()
           .composite([{
-            input: await sharp(mask)
+            input: await sharp(textMask)
               .resize(cropWidth, cropHeight, { fit: 'fill' })
               .png()
               .toBuffer(),
