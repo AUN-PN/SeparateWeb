@@ -9,9 +9,64 @@ type CaptureOptions = {
   allowFileCapture: boolean
 }
 
+type ExtractRuntimeConfig = CaptureOptions & {
+  extractServiceUrl: string
+  extractServiceToken: string
+}
+
 const isCloudflareRuntime = () => {
   return process.env.NITRO_PRESET === 'cloudflare-module'
     || process.env.NITRO_PRESET === 'cloudflare-pages'
+}
+
+const normalizeExtractServiceEndpoint = (serviceUrl: string) => {
+  const endpoint = new URL(serviceUrl)
+
+  if (endpoint.pathname === '/') {
+    endpoint.pathname = '/api/extract'
+  }
+
+  return endpoint.toString()
+}
+
+const getExtractRuntimeConfig = (event: Parameters<typeof useRuntimeConfig>[0]): ExtractRuntimeConfig => {
+  const config = useRuntimeConfig(event)
+
+  return {
+    allowPrivateCapture: config.allowPrivateCapture,
+    allowFileCapture: config.allowFileCapture,
+    extractServiceUrl: config.extractServiceUrl,
+    extractServiceToken: config.extractServiceToken
+  }
+}
+
+const assertExtractServiceAuthorized = (event: Parameters<typeof getHeader>[0], token: string) => {
+  if (!token) {
+    return
+  }
+
+  if (getHeader(event, 'authorization') !== `Bearer ${token}`) {
+    throw createError({
+      statusCode: 401,
+      message: 'Invalid extraction service token'
+    })
+  }
+}
+
+const proxyExtractRequest = async (
+  serviceUrl: string,
+  token: string,
+  body: UiExtractionRequest
+) => {
+  const endpoint = normalizeExtractServiceEndpoint(serviceUrl)
+
+  return $fetch(endpoint, {
+    method: 'POST',
+    body,
+    headers: token
+      ? { authorization: `Bearer ${token}` }
+      : undefined
+  })
 }
 
 const loadUiExtractionService = async (): Promise<typeof UiExtractionService> => {
@@ -107,14 +162,22 @@ const assertAllowedTarget = async (target: URL, options: CaptureOptions) => {
 }
 
 export default defineEventHandler(async (event) => {
+  const body = await readBody<UiExtractionRequest>(event)
+  const config = getExtractRuntimeConfig(event)
+
   if (isCloudflareRuntime()) {
+    if (config.extractServiceUrl) {
+      return proxyExtractRequest(config.extractServiceUrl, config.extractServiceToken, body)
+    }
+
     throw createError({
       statusCode: 501,
-      message: 'UI extraction requires Playwright and sharp, which are not available in the Cloudflare runtime.'
+      message: 'UI extraction requires EXTRACT_SERVICE_URL on the Cloudflare runtime.'
     })
   }
 
-  const body = await readBody<UiExtractionRequest>(event)
+  assertExtractServiceAuthorized(event, config.extractServiceToken)
+
   const rawUrl = body.url?.trim()
 
   if (!rawUrl) {
@@ -142,7 +205,6 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const config = useRuntimeConfig(event)
   await assertAllowedTarget(parsedUrl, {
     allowPrivateCapture: config.allowPrivateCapture,
     allowFileCapture: config.allowFileCapture

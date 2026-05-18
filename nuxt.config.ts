@@ -13,7 +13,9 @@ export default defineNuxtConfig({
     allowPrivateCapture: process.env.ALLOW_PRIVATE_CAPTURE === 'true',
     allowFileCapture: process.env.ALLOW_FILE_CAPTURE === undefined
       ? process.env.NODE_ENV !== 'production'
-      : process.env.ALLOW_FILE_CAPTURE === 'true'
+      : process.env.ALLOW_FILE_CAPTURE === 'true',
+    extractServiceUrl: process.env.EXTRACT_SERVICE_URL || '',
+    extractServiceToken: process.env.EXTRACT_SERVICE_TOKEN || ''
   },
 
   typescript: {
@@ -21,7 +23,7 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    preset: "cloudflare_module",
+    preset: process.env.NITRO_PRESET || 'cloudflare_module',
 
     cloudflare: {
       deployConfig: true,
