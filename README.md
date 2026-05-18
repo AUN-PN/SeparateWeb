@@ -26,6 +26,50 @@ npm install
 npm run capture -- https://example.com
 ```
 
+## ใช้ผ่าน npm
+
+ติดตั้งจาก folder นี้:
+
+```bash
+cd plugins/separateweb-capture
+npm install
+npm link
+```
+
+แล้วเรียกได้ทุกที่:
+
+```bash
+separateweb patch /Users/onecrop/Desktop/patches
+separateweb capture https://domain.com
+separateweb capture https://domain.com --single
+separateweb capture https://domain.com/about
+separateweb capture https://domain.com/about --all
+```
+
+ถ้าจะ publish npm:
+
+```bash
+cd plugins/separateweb-capture
+npm publish --access public
+```
+
+แล้วติดตั้ง:
+
+```bash
+npm install -g separateweb-capture
+```
+
+## ใช้กับ Claude Code
+
+Claude Code อ่าน [CLAUDE.md](./CLAUDE.md) และ [plugins/separateweb-capture/CLAUDE.md](./plugins/separateweb-capture/CLAUDE.md)
+
+ใช้คำสั่งเดียวกับ npm:
+
+```bash
+separateweb patch /Users/onecrop/Desktop/patches
+separateweb capture https://domain.com --single
+```
+
 ผลลัพธ์:
 
 ```text

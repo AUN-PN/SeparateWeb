@@ -13,6 +13,48 @@ npm install
 npm run capture -- https://example.com
 ```
 
+## npm CLI
+
+ติดตั้ง local:
+
+```bash
+npm install
+npm link
+```
+
+ใช้:
+
+```bash
+separateweb patch /Users/onecrop/Desktop/patches
+separateweb capture https://domain.com
+separateweb capture https://domain.com --single
+separateweb capture https://domain.com/docs
+separateweb capture https://domain.com/docs --all
+```
+
+publish:
+
+```bash
+npm publish --access public
+```
+
+ติดตั้งจาก npm:
+
+```bash
+npm install -g separateweb-capture
+```
+
+## Claude Code
+
+Claude Code ใช้คู่มือใน `CLAUDE.md`
+
+คำสั่งหลัก:
+
+```bash
+separateweb patch /Users/onecrop/Desktop/patches
+separateweb capture https://domain.com --single
+```
+
 ## Set capture path
 
 ```bash
