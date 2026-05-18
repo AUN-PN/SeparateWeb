@@ -149,32 +149,6 @@ separateweb create <manifest.json> --items <indexes> --path <dir>
 - `capture https://example.com/docs --all` crawls same-origin paths starting from `/docs`.
 - `--max-pages` accepts `1` to `200`.
 
-## Selection Workflow
-
-List manifest items:
-
-```bash
-separateweb select captures/<jobId>/page-001-<slug>/manifest.json
-```
-
-Export selected items:
-
-```bash
-separateweb create captures/<jobId>/page-001-<slug>/manifest.json --items 1,3,5 --path /absolute/output/path
-```
-
-Set the default export path:
-
-```bash
-separateweb patch /absolute/output/path
-```
-
-Clear it:
-
-```bash
-separateweb patch --clear
-```
-
 ## Troubleshooting
 
 - If capture fails, report the exact error from `scripts/capture.mjs`.
@@ -183,4 +157,4 @@ separateweb patch --clear
 
 ## License
 
-MIT. See [LICENSE](./LICENSE).
+MIT License.
