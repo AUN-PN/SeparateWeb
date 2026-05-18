@@ -6,6 +6,12 @@
   "bin": {
     "separateweb": "./scripts/capture.mjs"
   },
+  "files": [
+    ".codex-plugin",
+    "README.md",
+    "scripts",
+    "skills"
+  ],
   "scripts": {
     "capture": "node ./scripts/capture.mjs capture",
     "check": "node --check ./scripts/capture.mjs"
