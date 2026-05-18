@@ -11,10 +11,11 @@ const DEFAULT_OUT_DIR = 'captures'
 const CONFIG_DIR = join(homedir(), '.separateweb-capture')
 const CONFIG_PATH = join(CONFIG_DIR, 'config.json')
 const MAX_ITEMS = 80
+const DEFAULT_MAX_PAGES = 20
 
 const usage = () => {
   console.log(`Usage:
-  separateweb capture <url> [--out <dir>] [--width <px>] [--height <px>]
+  separateweb capture <url> [--out <dir>] [--width <px>] [--height <px>] [--max-pages <n>] [--single|--all]
   separateweb patch <dir>
   separateweb patch --clear
   separateweb select <manifest.json>
@@ -23,7 +24,8 @@ const usage = () => {
 
 Example:
   separateweb patch /Users/onecrop/Desktop/patches
-  separateweb capture https://demo.separateweb.dev/orbit-store
+  separateweb capture https://demo.separateweb.dev/
+  separateweb capture https://demo.separateweb.dev/orbit-store --single
   separateweb select captures/<jobId>/manifest.json
   separateweb create captures/<jobId>/manifest.json --items 1,3,5 --path /Users/onecrop/Desktop/patches`)
 }
@@ -44,6 +46,9 @@ const parseArgs = (argv) => {
     items: '',
     width: DEFAULT_VIEWPORT.width,
     height: DEFAULT_VIEWPORT.height,
+    maxPages: DEFAULT_MAX_PAGES,
+    all: argv.includes('--all'),
+    single: argv.includes('--single'),
     clear: argv.includes('--clear'),
     help: argv.includes('--help') || argv.includes('-h')
   }
@@ -75,6 +80,23 @@ const parseArgs = (argv) => {
 
     if (arg === '--clear') {
       options.clear = true
+      continue
+    }
+
+    if (arg === '--all') {
+      options.all = true
+      continue
+    }
+
+    if (arg === '--single') {
+      options.single = true
+      continue
+    }
+
+    if (arg === '--max-pages') {
+      if (!next) fail('--max-pages requires a number')
+      options.maxPages = Number(next)
+      index += 1
       continue
     }
 
@@ -126,6 +148,14 @@ const normalizeUrl = (value) => {
 const normalizeDimension = (value, name) => {
   if (!Number.isFinite(value) || value < 320 || value > 10000) {
     fail(`${name} must be a number between 320 and 10000`)
+  }
+
+  return Math.floor(value)
+}
+
+const normalizeMaxPages = (value) => {
+  if (!Number.isFinite(value) || value < 1 || value > 200) {
+    fail('--max-pages must be a number between 1 and 200')
   }
 
   return Math.floor(value)
@@ -257,9 +287,11 @@ const createPatch = async (options) => {
   for (const selectedIndex of selectedIndexes) {
     const item = items[selectedIndex]
     const sourceImagePath = resolveManifestAssetPath(manifestPath, item.image?.path)
+    const kindDir = join(assetDir, item.kind || 'unknown')
     const imageName = `${String(selectedIndex + 1).padStart(3, '0')}-${item.id || `item-${selectedIndex + 1}`}.png`
-    const imagePath = join(assetDir, imageName)
+    const imagePath = join(kindDir, imageName)
 
+    await mkdir(kindDir, { recursive: true })
     if (sourceImagePath) {
       await copyFile(sourceImagePath, imagePath)
     }
@@ -303,6 +335,151 @@ const slugFromUrl = (url) => {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 48) || 'capture'
+}
+
+const normalizePageUrl = (href) => {
+  const url = new URL(href)
+  url.hash = ''
+  url.search = ''
+
+  if (url.pathname.length > 1) {
+    url.pathname = url.pathname.replace(/\/+$/, '')
+  }
+
+  return url.toString()
+}
+
+const shouldCrawlByDefault = (url) => {
+  const parsed = new URL(url)
+
+  return ['http:', 'https:'].includes(parsed.protocol)
+    && (parsed.pathname === '/' || parsed.pathname === '')
+    && !parsed.search
+}
+
+const shouldSkipCrawlPath = (url) => {
+  return /\.(?:png|jpe?g|gif|webp|svg|ico|pdf|zip|mp4|mp3|webm|css|js|json|xml|txt)(?:$|[?#])/i.test(url.pathname)
+}
+
+const safeFetchText = async (url) => {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        accept: 'application/xml,text/xml,text/plain,*/*'
+      }
+    })
+
+    if (!response.ok) return ''
+
+    return response.text()
+  } catch {
+    return ''
+  }
+}
+
+const discoverSitemapPages = async (startUrl, maxPages) => {
+  const start = new URL(startUrl)
+  const robots = await safeFetchText(new URL('/robots.txt', start.origin).toString())
+  const sitemapUrls = [
+    new URL('/sitemap.xml', start.origin).toString(),
+    ...robots
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => /^sitemap:/i.test(line))
+      .map((line) => line.replace(/^sitemap:\s*/i, ''))
+  ]
+  const pages = []
+  const seen = new Set()
+
+  for (const sitemapUrl of sitemapUrls) {
+    if (pages.length >= maxPages || seen.has(sitemapUrl)) continue
+    seen.add(sitemapUrl)
+
+    const xml = await safeFetchText(sitemapUrl)
+
+    for (const match of xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)) {
+      let normalized
+
+      try {
+        normalized = normalizePageUrl(match[1].trim())
+      } catch {
+        continue
+      }
+
+      const parsed = new URL(normalized)
+
+      if (parsed.origin !== start.origin || shouldSkipCrawlPath(parsed)) continue
+      if (!pages.includes(normalized)) pages.push(normalized)
+      if (pages.length >= maxPages) break
+    }
+  }
+
+  return pages
+}
+
+const discoverPages = async (browser, startUrl, maxPages) => {
+  const start = new URL(startUrl)
+  const queue = [normalizePageUrl(start.toString())]
+  const queued = new Set(queue)
+  const visited = []
+
+  const addUrl = (href) => {
+    let normalized
+
+    try {
+      normalized = normalizePageUrl(href)
+    } catch {
+      return
+    }
+
+    const parsed = new URL(normalized)
+
+    if (parsed.origin !== start.origin || shouldSkipCrawlPath(parsed)) return
+    if (visited.includes(normalized) || queued.has(normalized)) return
+    if (visited.length + queue.length >= maxPages) return
+
+    queue.push(normalized)
+    queued.add(normalized)
+  }
+
+  ;(await discoverSitemapPages(startUrl, maxPages)).forEach(addUrl)
+
+  while (queue.length && visited.length < maxPages) {
+    const currentUrl = queue.shift()
+
+    if (!currentUrl || visited.includes(currentUrl)) continue
+
+    queued.delete(currentUrl)
+    visited.push(currentUrl)
+
+    const page = await browser.newPage({
+      viewport: DEFAULT_VIEWPORT,
+      deviceScaleFactor: 1
+    })
+
+    try {
+      await page.goto(currentUrl, {
+        waitUntil: 'domcontentloaded',
+        timeout: 45000
+      })
+      await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => undefined)
+
+      const hrefs = await page.evaluate(() => {
+        return [
+          ...Array.from(document.links).map((link) => link.href),
+          ...Array.from(document.querySelectorAll('form[action]')).map((form) => form.action)
+        ].filter(Boolean)
+      })
+
+      hrefs.forEach(addUrl)
+    } catch {
+      // Keep discovered pages even if one page fails during discovery.
+    } finally {
+      await page.close()
+    }
+  }
+
+  return visited.length ? visited : [normalizePageUrl(startUrl)]
 }
 
 const collectBlocks = async (page) => {
@@ -402,28 +579,21 @@ const collectBlocks = async (page) => {
   }, MAX_ITEMS)
 }
 
-const capture = async (options) => {
-  const url = normalizeUrl(options.url)
+const capturePage = async (browser, url, outputDir, options) => {
   const width = normalizeDimension(options.width, '--width')
   const height = normalizeDimension(options.height, '--height')
-  const config = await readConfig()
-  const outDir = options.outDirSet ? options.outDir : config.patchPath || options.outDir
-  const jobId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${slugFromUrl(url)}-${randomUUID().slice(0, 8)}`
-  const outputDir = resolve(process.cwd(), outDir, jobId)
   const itemDir = join(outputDir, 'items')
   const fullPagePath = join(outputDir, 'full-page.png')
   const manifestPath = join(outputDir, 'manifest.json')
 
   await mkdir(itemDir, { recursive: true })
 
-  const browser = await chromium.launch({ headless: true })
+  const page = await browser.newPage({
+    viewport: { width, height },
+    deviceScaleFactor: 1
+  })
 
   try {
-    const page = await browser.newPage({
-      viewport: { width, height },
-      deviceScaleFactor: 1
-    })
-
     await page.goto(url, {
       waitUntil: 'domcontentloaded',
       timeout: 45000
@@ -449,9 +619,11 @@ const capture = async (options) => {
 
       if (cropWidth < 1 || cropHeight < 1) continue
 
+      const kindDir = join(itemDir, item.kind)
       const imageName = `${String(index + 1).padStart(3, '0')}-${item.id}-${item.kind}.png`
-      const imagePath = join(itemDir, imageName)
+      const imagePath = join(kindDir, imageName)
 
+      await mkdir(kindDir, { recursive: true })
       await sharp(screenshotBuffer)
         .extract({
           left,
@@ -472,8 +644,12 @@ const capture = async (options) => {
       })
     }
 
+    const itemKindCounts = items.reduce((counts, item) => {
+      counts[item.kind] = (counts[item.kind] || 0) + 1
+      return counts
+    }, {})
+
     const manifest = {
-      jobId,
       url,
       title,
       capturedAt: new Date().toISOString(),
@@ -484,12 +660,77 @@ const capture = async (options) => {
         height: imageHeight
       },
       totalBlocks: items.length,
+      itemKindCounts,
       items
     }
 
     await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
 
-    return { fullPagePath, manifestPath, totalBlocks: items.length }
+    return { fullPagePath, manifestPath, totalBlocks: items.length, itemKindCounts }
+  } finally {
+    await page.close()
+  }
+}
+
+const capture = async (options) => {
+  const url = normalizeUrl(options.url)
+  const maxPages = normalizeMaxPages(options.maxPages)
+  const config = await readConfig()
+  const outDir = options.outDirSet ? options.outDir : config.patchPath || options.outDir
+  const jobId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${slugFromUrl(url)}-${randomUUID().slice(0, 8)}`
+  const outputDir = resolve(process.cwd(), outDir, jobId)
+  const browser = await chromium.launch({ headless: true })
+
+  try {
+    const crawl = options.all || (!options.single && shouldCrawlByDefault(url))
+    const urls = crawl ? await discoverPages(browser, url, maxPages) : [url]
+    const pages = []
+
+    for (const [index, pageUrl] of urls.entries()) {
+      const pageDir = urls.length === 1 ? outputDir : join(outputDir, `page-${String(index + 1).padStart(3, '0')}-${slugFromUrl(pageUrl)}`)
+
+      try {
+        const result = await capturePage(browser, pageUrl, pageDir, options)
+
+        pages.push({
+          url: pageUrl,
+          status: 'success',
+          outputDir: pageDir,
+          manifestPath: result.manifestPath,
+          fullPagePath: result.fullPagePath,
+          totalBlocks: result.totalBlocks,
+          itemKindCounts: result.itemKindCounts
+        })
+      } catch (error) {
+        pages.push({
+          url: pageUrl,
+          status: 'failed',
+          outputDir: pageDir,
+          error: error instanceof Error ? error.message : 'Unknown capture error'
+        })
+      }
+    }
+
+    const crawlManifestPath = join(outputDir, 'site-manifest.json')
+    const siteManifest = {
+      jobId,
+      mode: crawl ? 'site' : 'page',
+      startUrl: url,
+      capturedAt: new Date().toISOString(),
+      totalPages: pages.length,
+      succeededPages: pages.filter((page) => page.status === 'success').length,
+      failedPages: pages.filter((page) => page.status === 'failed').length,
+      pages
+    }
+
+    await writeFile(crawlManifestPath, `${JSON.stringify(siteManifest, null, 2)}\n`)
+
+    return {
+      outputDir,
+      manifestPath: crawlManifestPath,
+      pages,
+      crawl
+    }
   } finally {
     await browser.close()
   }
@@ -542,9 +783,11 @@ const main = async () => {
 
   const result = await capture(options)
 
-  console.log(`Captured: ${result.fullPagePath}`)
+  console.log(`Captured: ${result.outputDir}`)
   console.log(`Manifest: ${result.manifestPath}`)
-  console.log(`Blocks: ${result.totalBlocks}`)
+  console.log(`Pages: ${result.pages.length}`)
+  console.log(`Succeeded: ${result.pages.filter((page) => page.status === 'success').length}`)
+  console.log(`Failed: ${result.pages.filter((page) => page.status === 'failed').length}`)
 }
 
 main().catch((error) => {

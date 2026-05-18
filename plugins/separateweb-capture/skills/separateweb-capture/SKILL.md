@@ -26,7 +26,18 @@ Optional flags:
 --path <dir>
 --width <px>
 --height <px>
+--max-pages <n>
+--single
+--all
 ```
+
+Capture behavior:
+
+- `capture https://example.com/` crawls same-origin paths by default.
+- `capture https://example.com/path` captures only that page by default.
+- Use `--single` to force one page.
+- Use `--all` to force same-origin crawl from any start URL.
+- Captured items are grouped by type under `items/<kind>/`.
 
 Patch selection:
 
@@ -41,10 +52,13 @@ Use `patch <path>` to set the default machine path where future `capture` output
 Default output:
 
 ```text
-captures/<jobId>/full-page.png
-captures/<jobId>/manifest.json
-captures/<jobId>/items/*.png
+captures/<jobId>/site-manifest.json
+captures/<jobId>/page-001-<slug>/full-page.png
+captures/<jobId>/page-001-<slug>/manifest.json
+captures/<jobId>/page-001-<slug>/items/<kind>/*.png
 ```
+
+Single-page capture writes `full-page.png`, `manifest.json`, and `items/<kind>/*.png` directly under `captures/<jobId>/`.
 
 After running, report:
 

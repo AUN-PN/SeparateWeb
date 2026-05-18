@@ -6,4 +6,5 @@ node_modules
 captures
 patches
 tmp-patches
+tmp-test-*
 *.tgz
