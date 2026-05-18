@@ -30,6 +30,8 @@
       "Capture this page into UI crops",
       "Take a full-page screenshot and manifest"
     ],
-    "brandColor": "#2563EB"
+    "brandColor": "#2563EB",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/logo.png"
   }
 }

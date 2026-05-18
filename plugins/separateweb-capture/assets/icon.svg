@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="SeparateWeb Capture">
+  <defs>
+    <linearGradient id="bg" x1="64" x2="448" y1="64" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38BDF8"/>
+      <stop offset="0.55" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="lens" x1="166" x2="346" y1="166" y2="346" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#BAE6FD"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <path fill="#0F172A" fill-opacity="0.22" d="M128 150c0-22 18-40 40-40h176c22 0 40 18 40 40v212c0 22-18 40-40 40H168c-22 0-40-18-40-40V150Z"/>
+  <path fill="#EFF6FF" d="M150 126h212c18 0 32 14 32 32v196c0 18-14 32-32 32H150c-18 0-32-14-32-32V158c0-18 14-32 32-32Zm0 60v168h212V186H150Z"/>
+  <circle cx="166" cy="156" r="10" fill="#EF4444"/>
+  <circle cx="198" cy="156" r="10" fill="#F59E0B"/>
+  <circle cx="230" cy="156" r="10" fill="#22C55E"/>
+  <path fill="#93C5FD" d="M184 232h82v34h-82v-34Zm0 60h144v34H184v-34Z"/>
+  <path fill="#DBEAFE" d="M294 224h42v42h-42v-42Z"/>
+  <circle cx="304" cy="304" r="74" fill="url(#lens)" stroke="#0F172A" stroke-width="24"/>
+  <path stroke="#0F172A" stroke-linecap="round" stroke-width="34" d="m354 354 42 42"/>
+  <path fill="#2563EB" d="M278 286h52v36h-52v-36Z"/>
+</svg>

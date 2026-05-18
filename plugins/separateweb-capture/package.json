@@ -20,6 +20,7 @@
   },
   "files": [
     ".codex-plugin",
+    "assets",
     "CLAUDE.md",
     "README.md",
     "scripts",

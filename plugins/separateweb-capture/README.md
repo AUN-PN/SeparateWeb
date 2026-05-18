@@ -5,6 +5,7 @@ Codex plugin สำหรับ capture หน้าเว็บเป็น ass
 - `full-page.png`
 - `manifest.json`
 - `items/<kind>/*.png`
+- plugin icon: `assets/icon.png`
 
 ## Local test
 
