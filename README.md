@@ -1,76 +1,75 @@
-# SeparateWeb Capture Codex Plugin
+# SeparateWeb Capture
 
-Repo นี้เหลือเป็น Codex plugin สำหรับ capture หน้าเว็บด้วย Playwright + Sharp
-ไม่ใช้ Nuxt, Cloudflare Worker, หรือเว็บ UI แล้ว
+Codex plugin สำหรับ capture หน้าเว็บเป็น asset ที่เอาไปใช้ต่อได้ทันที:
 
-## Plugin
+- full-page screenshot
+- cropped UI item PNGs
+- JSON manifests
+- same-origin crawl สำหรับ URL root
+- one-page capture สำหรับ URL path หรือ `--single`
+
+Repo นี้เป็น plugin-only ไม่ใช้ Nuxt, Cloudflare Worker, หรือ web UI แล้ว
+
+## Plugin Layout
 
 ```text
-plugins/separateweb-capture
+plugins/separateweb-capture/
+  .codex-plugin/plugin.json
+  skills/separateweb-capture/SKILL.md
+  scripts/capture.mjs
+  assets/
+  README.md
+  LICENSE
 ```
 
-## ใช้ใน Codex
+ตาม Codex plugin layout: plugin อยู่ใต้ `plugins/<name>/`, มี `.codex-plugin/plugin.json` เป็น manifest หลัก และมี companion surfaces เช่น `skills/`, `scripts/`, `assets/` ตามที่ plugin ต้องใช้
 
-หลังติดตั้ง plugin ให้สั่ง:
+## Use In Codex
+
+หลังติดตั้ง plugin แล้ว ใช้ prompt:
 
 ```text
+separateweb capture https://example.com
+separateweb capture https://example.com/docs --single
 separateweb patch /Users/onecrop/Desktop/patches
-separateweb capture https://demo.separateweb.dev/orbit-store
 ```
 
-## ใช้ script ตรง
+Skill ที่ Codex โหลด:
+
+```text
+plugins/separateweb-capture/skills/separateweb-capture/SKILL.md
+```
+
+## Local CLI
 
 ```bash
 cd plugins/separateweb-capture
 npm install
-npm run capture -- https://example.com
+npm run check
+npm run capture -- https://example.com --single
 ```
 
-## ใช้ผ่าน npm
-
-ติดตั้งจาก folder นี้:
+หรือ link เป็น command:
 
 ```bash
 cd plugins/separateweb-capture
-npm install
 npm link
+separateweb capture https://example.com
 ```
 
-แล้วเรียกได้ทุกที่:
+## Commands
 
 ```bash
-separateweb patch /Users/onecrop/Desktop/patches
-separateweb capture https://domain.com
-separateweb capture https://domain.com --single
-separateweb capture https://domain.com/about
-separateweb capture https://domain.com/about --all
+separateweb capture <url> [--out <dir>] [--width <px>] [--height <px>] [--max-pages <n>] [--single|--all]
+separateweb patch <dir>
+separateweb patch --clear
+separateweb select <manifest.json>
+separateweb create <manifest.json> --items <indexes> --path <dir>
 ```
 
-ถ้าจะ publish npm:
+## Output
 
-```bash
-cd plugins/separateweb-capture
-npm publish --access public
-```
-
-แล้วติดตั้ง:
-
-```bash
-npm install -g separateweb-capture
-```
-
-## ใช้กับ Claude Code
-
-Claude Code อ่าน [CLAUDE.md](./CLAUDE.md) และ [plugins/separateweb-capture/CLAUDE.md](./plugins/separateweb-capture/CLAUDE.md)
-
-ใช้คำสั่งเดียวกับ npm:
-
-```bash
-separateweb patch /Users/onecrop/Desktop/patches
-separateweb capture https://domain.com --single
-```
-
-ผลลัพธ์:
+Root crawl:
 
 ```text
 captures/<jobId>/site-manifest.json
@@ -79,37 +78,28 @@ captures/<jobId>/page-001-<slug>/manifest.json
 captures/<jobId>/page-001-<slug>/items/<kind>/*.png
 ```
 
-ถ้าเป็นหน้าเดียว output จะอยู่ตรง `captures/<jobId>/full-page.png`,
-`captures/<jobId>/manifest.json`, `captures/<jobId>/items/<kind>/*.png`
+Single page:
 
-Default:
-
-- `capture https://example.com` หรือ `capture https://example.com/` = crawl ทุก path ในเว็บเดียวกัน
-- `capture https://example.com --single` = แคปเฉพาะหน้าแรก
-- `capture https://example.com/path` = แคปเฉพาะ path นั้น
-- ใช้ `--single` เพื่อบังคับแคปหน้าเดียว
-- ใช้ `--all` เพื่อบังคับ crawl จาก path ใดก็ได้
-
-ตัวอย่างเลือกโหมด:
-
-```bash
-separateweb capture https://domain.com
-# crawl ทุก path
-
-separateweb capture https://domain.com --single
-# แคปเฉพาะหน้าแรก
-
-separateweb capture https://domain.com/about
-# แคปเฉพาะ /about
-
-separateweb capture https://domain.com/about --all
-# crawl จาก /about
+```text
+captures/<jobId>/site-manifest.json
+captures/<jobId>/full-page.png
+captures/<jobId>/manifest.json
+captures/<jobId>/items/<kind>/*.png
 ```
 
-เลือก item แล้วสร้าง patch ลง path ในเครื่อง:
+## Publish Package
 
 ```bash
-node scripts/capture.mjs patch /Users/onecrop/Desktop/patches
-node scripts/capture.mjs select captures/<jobId>/page-001-<slug>/manifest.json
-node scripts/capture.mjs create captures/<jobId>/page-001-<slug>/manifest.json --items 1,3,5 --path /Users/onecrop/Desktop/patches
+cd plugins/separateweb-capture
+npm publish --access public
 ```
+
+Install from npm:
+
+```bash
+npm install -g separateweb-capture
+```
+
+## License
+
+MIT. See [LICENSE](./LICENSE) and [plugins/separateweb-capture/LICENSE](./plugins/separateweb-capture/LICENSE).

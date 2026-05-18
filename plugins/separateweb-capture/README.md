@@ -1,105 +1,91 @@
 # SeparateWeb Capture
 
-Codex plugin สำหรับ capture หน้าเว็บเป็น asset ชุดเล็ก:
+Capture a URL into screenshots, UI item crops, and JSON manifests from Codex or the local CLI.
 
-- `full-page.png`
-- `manifest.json`
-- `items/<kind>/*.png`
-- plugin icon: `assets/icon.png`
+## What This Plugin Contains
 
-## Local test
-
-```bash
-npm install
-npm run capture -- https://example.com
+```text
+.codex-plugin/plugin.json          Codex plugin manifest
+skills/separateweb-capture/SKILL.md Codex skill trigger and workflow
+scripts/capture.mjs                Playwright + Sharp capture CLI
+assets/icon.png                    Composer icon
+assets/logo.png                    Plugin logo
 ```
 
-## npm CLI
+The required Codex entrypoint is `.codex-plugin/plugin.json`. The skill in `skills/separateweb-capture/SKILL.md` tells Codex when to run this plugin and which script command to use.
 
-ติดตั้งจากโฟลเดอร์นี้:
+## Install
 
 ```bash
 npm install
+```
+
+Optional global command for local development:
+
+```bash
 npm link
 ```
 
-ใช้:
+## Codex Usage
 
-```bash
+Ask Codex:
+
+```text
+separateweb capture https://example.com
+separateweb capture https://example.com --single
+separateweb capture https://example.com/docs
+separateweb capture https://example.com/docs --all
 separateweb patch /Users/onecrop/Desktop/patches
-separateweb capture https://domain.com
-separateweb capture https://domain.com --single
-separateweb capture https://domain.com/docs
-separateweb capture https://domain.com/docs --all
 ```
 
-publish:
+Codex should run the script from this plugin root:
 
 ```bash
-npm publish --access public
+node scripts/capture.mjs capture <url>
+node scripts/capture.mjs patch <dir>
 ```
 
-ติดตั้งจาก npm:
+## CLI Usage
 
 ```bash
-npm install -g separateweb-capture
+separateweb capture <url> [--out <dir>] [--width <px>] [--height <px>] [--max-pages <n>] [--single|--all]
+separateweb patch <dir>
+separateweb patch --clear
+separateweb select <manifest.json>
+separateweb create <manifest.json> --items <indexes> --path <dir>
 ```
 
-## Claude Code
-
-Claude Code ใช้คู่มือใน `CLAUDE.md`
-
-คำสั่งหลัก:
+Without `npm link`, use:
 
 ```bash
-separateweb patch /Users/onecrop/Desktop/patches
-separateweb capture https://domain.com --single
+node scripts/capture.mjs capture https://example.com --single
 ```
 
-## Set capture path
+## Capture Behavior
 
-```bash
-node scripts/capture.mjs patch /Users/onecrop/Desktop/patches
-node scripts/capture.mjs capture https://example.com
-```
+- `capture https://example.com` crawls same-origin paths.
+- `capture https://example.com/` crawls same-origin paths.
+- `capture https://example.com --single` captures only the root page.
+- `capture https://example.com/docs` captures only `/docs`.
+- `capture https://example.com/docs --all` crawls same-origin paths starting from `/docs`.
+- `--max-pages` accepts `1` to `200`.
 
-หลังตั้งค่า `patch <path>` แล้ว ทุกครั้งที่ `capture` จะลงใน path นั้นโดย default
+## Output
 
-ค่า default ของ `capture`:
-
-- URL root เช่น `https://example.com` หรือ `https://example.com/` จะ crawl ทุก path ใน origin เดียวกัน
-- ถ้าต้องการแคปเฉพาะหน้าแรก ให้ใช้ `--single`
-- URL มี path เช่น `https://example.com/docs` จะแคปเฉพาะหน้านั้น
-- item crops แยกตาม type ใน `items/<kind>/`
-
-ตัวอย่าง:
-
-```bash
-node scripts/capture.mjs capture https://domain.com
-# crawl ทุก path
-
-node scripts/capture.mjs capture https://domain.com --single
-# แคปเฉพาะหน้าแรก
-
-node scripts/capture.mjs capture https://domain.com/docs
-# แคปเฉพาะ /docs
-
-node scripts/capture.mjs capture https://domain.com/docs --all
-# crawl จาก /docs
-```
-
-Root crawl output:
+Root crawl:
 
 ```text
 captures/<jobId>/site-manifest.json
+captures/<jobId>/page-001-<slug>/full-page.png
 captures/<jobId>/page-001-<slug>/manifest.json
 captures/<jobId>/page-001-<slug>/items/<kind>/*.png
 ```
 
-Single page output:
+Single page:
 
 ```text
 captures/<jobId>/site-manifest.json
+captures/<jobId>/full-page.png
 captures/<jobId>/manifest.json
 captures/<jobId>/items/<kind>/*.png
 ```
@@ -107,14 +93,49 @@ captures/<jobId>/items/<kind>/*.png
 ## Options
 
 ```bash
-npm run capture -- https://example.com -- --out captures --width 1440 --height 1000 --max-pages 20
-npm run capture -- https://example.com -- --single
-npm run capture -- https://example.com/docs -- --all
+separateweb capture https://example.com --out captures --width 1440 --height 1000 --max-pages 20
+separateweb capture https://example.com --single
+separateweb capture https://example.com/docs --all
 ```
 
-## Select and patch
+## Select And Export Items
 
 ```bash
-node scripts/capture.mjs select captures/<jobId>/page-001-<slug>/manifest.json
-node scripts/capture.mjs create captures/<jobId>/page-001-<slug>/manifest.json --items 1,3,5 --path /Users/onecrop/Desktop/patches
+separateweb select captures/<jobId>/page-001-<slug>/manifest.json
+separateweb create captures/<jobId>/page-001-<slug>/manifest.json --items 1,3,5 --path /Users/onecrop/Desktop/patches
 ```
+
+Set the default export path:
+
+```bash
+separateweb patch /Users/onecrop/Desktop/patches
+```
+
+Clear it:
+
+```bash
+separateweb patch --clear
+```
+
+## Validate
+
+```bash
+npm run check
+node scripts/capture.mjs --help
+```
+
+## Publish
+
+```bash
+npm publish --access public
+```
+
+Install from npm:
+
+```bash
+npm install -g separateweb-capture
+```
+
+## License
+
+MIT. See [LICENSE](./LICENSE).
