@@ -1,25 +1,31 @@
 #!/usr/bin/env node
 import { randomUUID } from 'node:crypto'
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { chromium } from 'playwright'
 import sharp from 'sharp'
 
 const DEFAULT_VIEWPORT = { width: 1440, height: 1000 }
 const DEFAULT_OUT_DIR = 'captures'
+const CONFIG_DIR = join(homedir(), '.separateweb-capture')
+const CONFIG_PATH = join(CONFIG_DIR, 'config.json')
 const MAX_ITEMS = 80
 
 const usage = () => {
   console.log(`Usage:
   separateweb capture <url> [--out <dir>] [--width <px>] [--height <px>]
+  separateweb patch <dir>
+  separateweb patch --clear
   separateweb select <manifest.json>
-  separateweb patch <manifest.json> --items <indexes> --path <dir>
+  separateweb create <manifest.json> --items <indexes> --path <dir>
   node scripts/capture.mjs capture <url>
 
 Example:
+  separateweb patch /Users/onecrop/Desktop/patches
   separateweb capture https://demo.separateweb.dev/orbit-store
   separateweb select captures/<jobId>/manifest.json
-  separateweb patch captures/<jobId>/manifest.json --items 1,3,5 --path /Users/onecrop/Desktop/patches`)
+  separateweb create captures/<jobId>/manifest.json --items 1,3,5 --path /Users/onecrop/Desktop/patches`)
 }
 
 const fail = (message, code = 1) => {
@@ -34,9 +40,11 @@ const parseArgs = (argv) => {
     target: rawTarget,
     url: rawTarget,
     outDir: DEFAULT_OUT_DIR,
+    outDirSet: false,
     items: '',
     width: DEFAULT_VIEWPORT.width,
     height: DEFAULT_VIEWPORT.height,
+    clear: argv.includes('--clear'),
     help: argv.includes('--help') || argv.includes('-h')
   }
 
@@ -52,6 +60,7 @@ const parseArgs = (argv) => {
     if (arg === '--out') {
       if (!next) fail('--out requires a directory')
       options.outDir = next
+      options.outDirSet = true
       index += 1
       continue
     }
@@ -59,7 +68,13 @@ const parseArgs = (argv) => {
     if (arg === '--path') {
       if (!next) fail('--path requires a directory')
       options.outDir = next
+      options.outDirSet = true
       index += 1
+      continue
+    }
+
+    if (arg === '--clear') {
+      options.clear = true
       continue
     }
 
@@ -114,6 +129,52 @@ const normalizeDimension = (value, name) => {
   }
 
   return Math.floor(value)
+}
+
+const readConfig = async () => {
+  try {
+    return JSON.parse(await readFile(CONFIG_PATH, 'utf8'))
+  } catch {
+    return {}
+  }
+}
+
+const writeConfig = async (config) => {
+  await mkdir(CONFIG_DIR, { recursive: true })
+  await writeFile(CONFIG_PATH, `${JSON.stringify(config, null, 2)}\n`)
+}
+
+const showPatchPath = async () => {
+  const config = await readConfig()
+
+  console.log(`Config: ${CONFIG_PATH}`)
+  console.log(`Patch path: ${config.patchPath || '(not set)'}`)
+}
+
+const setPatchPath = async (targetPath) => {
+  if (!targetPath) fail('patch path is required')
+
+  const patchPath = resolve(process.cwd(), targetPath)
+  const config = {
+    ...(await readConfig()),
+    patchPath
+  }
+
+  await mkdir(patchPath, { recursive: true })
+  await writeConfig(config)
+
+  console.log(`Config: ${CONFIG_PATH}`)
+  console.log(`Patch path: ${patchPath}`)
+}
+
+const clearPatchPath = async () => {
+  const config = await readConfig()
+
+  delete config.patchPath
+  await writeConfig(config)
+
+  console.log(`Config: ${CONFIG_PATH}`)
+  console.log('Patch path: (not set)')
 }
 
 const readManifest = async (manifestPath) => {
@@ -345,8 +406,10 @@ const capture = async (options) => {
   const url = normalizeUrl(options.url)
   const width = normalizeDimension(options.width, '--width')
   const height = normalizeDimension(options.height, '--height')
+  const config = await readConfig()
+  const outDir = options.outDirSet ? options.outDir : config.patchPath || options.outDir
   const jobId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${slugFromUrl(url)}-${randomUUID().slice(0, 8)}`
-  const outputDir = resolve(process.cwd(), options.outDir, jobId)
+  const outputDir = resolve(process.cwd(), outDir, jobId)
   const itemDir = join(outputDir, 'items')
   const fullPagePath = join(outputDir, 'full-page.png')
   const manifestPath = join(outputDir, 'manifest.json')
@@ -445,7 +508,26 @@ const main = async () => {
     return
   }
 
-  if (options.command === 'patch' || options.command === 'create') {
+  if (options.command === 'patch') {
+    if (options.clear) {
+      await clearPatchPath()
+      return
+    }
+
+    if (!options.target) {
+      await showPatchPath()
+      return
+    }
+
+    if (options.items || options.target.endsWith('.json')) {
+      fail('Use `create <manifest.json> --items <indexes> --path <dir>` to export selected manifest items.')
+    }
+
+    await setPatchPath(options.target)
+    return
+  }
+
+  if (options.command === 'create') {
     const result = await createPatch(options)
 
     console.log(`Patch: ${result.patchManifestPath}`)

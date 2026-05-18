@@ -9,12 +9,14 @@ Use this skill when the user asks:
 
 ```text
 separateweb capture <url>
+separateweb patch <path>
 ```
 
 Run the plugin script from the plugin root:
 
 ```bash
 node scripts/capture.mjs capture <url>
+node scripts/capture.mjs patch <path>
 ```
 
 Optional flags:
@@ -29,11 +31,12 @@ Optional flags:
 Patch selection:
 
 ```bash
+node scripts/capture.mjs patch /absolute/output/path
 node scripts/capture.mjs select captures/<jobId>/manifest.json
-node scripts/capture.mjs patch captures/<jobId>/manifest.json --items 1,3,5 --path /absolute/output/path
+node scripts/capture.mjs create captures/<jobId>/manifest.json --items 1,3,5 --path /absolute/output/path
 ```
 
-Use `--path` when the user asks which machine path to place the patch into. `--out` remains supported as an alias.
+Use `patch <path>` to set the default machine path where future `capture` outputs are written. Use `create` only when exporting selected items from an existing manifest.
 
 Default output:
 

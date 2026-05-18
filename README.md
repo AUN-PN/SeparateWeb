@@ -14,6 +14,7 @@ plugins/separateweb-capture
 หลังติดตั้ง plugin ให้สั่ง:
 
 ```text
+separateweb patch /Users/onecrop/Desktop/patches
 separateweb capture https://demo.separateweb.dev/orbit-store
 ```
 
@@ -36,6 +37,7 @@ captures/<jobId>/items/*.png
 เลือก item แล้วสร้าง patch ลง path ในเครื่อง:
 
 ```bash
+node scripts/capture.mjs patch /Users/onecrop/Desktop/patches
 node scripts/capture.mjs select captures/<jobId>/manifest.json
-node scripts/capture.mjs patch captures/<jobId>/manifest.json --items 1,3,5 --path /Users/onecrop/Desktop/patches
+node scripts/capture.mjs create captures/<jobId>/manifest.json --items 1,3,5 --path /Users/onecrop/Desktop/patches
 ```
