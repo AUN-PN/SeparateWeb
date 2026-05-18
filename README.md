@@ -74,6 +74,53 @@ Supported command options:
 
 The package binaries are `separateweb` and `separateweb-capture`. Use `separateweb-capture` to install the local skill payload. Use `separateweb` to run capture commands through `npx`.
 
+## Example Capture
+
+This example was captured from a local game UI page:
+
+```bash
+node scripts/capture.mjs capture 'file:///path/to/design-game/index.html' --single
+```
+
+Output:
+
+```text
+Captured: captures/2026-05-18T21-39-53-265Z-index-html-4ed73889
+Pages: 1
+Succeeded: 1
+Failed: 0
+Blocks: 36
+```
+
+Detected item groups:
+
+```json
+{
+  "card-large": 4,
+  "button": 7,
+  "price": 8,
+  "badge": 3,
+  "icon": 3,
+  "media": 3,
+  "navigation": 1,
+  "card": 4,
+  "panel": 1,
+  "stat": 2
+}
+```
+
+Full-page capture:
+
+![Orbit Store full-page capture](plugins/separateweb-capture/docs/examples/orbit-store/full-page.png)
+
+Extracted UI items:
+
+| Kind | Example |
+|---|---|
+| `card-large` | ![Large card crop](plugins/separateweb-capture/docs/examples/orbit-store/card-large.png) |
+| `badge` | ![Badge crop](plugins/separateweb-capture/docs/examples/orbit-store/badge-data-cores.png) |
+| `media` | ![Transparent media crop](plugins/separateweb-capture/docs/examples/orbit-store/media-treasure.png) |
+
 ## What's Included
 
 ```text
