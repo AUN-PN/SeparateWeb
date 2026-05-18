@@ -2,11 +2,22 @@ import { lookup } from 'node:dns/promises'
 import { stat } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import type { UiExtractionRequest } from '#shared/types/ui-extraction'
-import { crawlAndExtractUiFromUrl, extractUiFromUrl } from '../services/ui-extraction.service'
+import type * as UiExtractionService from '../services/ui-extraction.service'
 
 type CaptureOptions = {
   allowPrivateCapture: boolean
   allowFileCapture: boolean
+}
+
+const isCloudflareRuntime = () => {
+  return process.env.NITRO_PRESET === 'cloudflare-module'
+    || process.env.NITRO_PRESET === 'cloudflare-pages'
+}
+
+const loadUiExtractionService = async (): Promise<typeof UiExtractionService> => {
+  const servicePath = '../services/ui-extraction.service'
+
+  return import(/* @vite-ignore */ servicePath)
 }
 
 const isPrivateIPv4 = (address: string) => {
@@ -93,6 +104,13 @@ const assertAllowedTarget = async (target: URL, options: CaptureOptions) => {
 }
 
 export default defineEventHandler(async (event) => {
+  if (isCloudflareRuntime()) {
+    throw createError({
+      statusCode: 501,
+      message: 'UI extraction requires Playwright and sharp, which are not available in the Cloudflare runtime.'
+    })
+  }
+
   const body = await readBody<UiExtractionRequest>(event)
   const rawUrl = body.url?.trim()
 
@@ -135,8 +153,12 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    const { crawlAndExtractUiFromUrl } = await loadUiExtractionService()
+
     return crawlAndExtractUiFromUrl(parsedUrl.toString(), body.maxPages)
   }
+
+  const { extractUiFromUrl } = await loadUiExtractionService()
 
   return extractUiFromUrl(parsedUrl.toString())
 })
