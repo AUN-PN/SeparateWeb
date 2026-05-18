@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { randomUUID } from 'node:crypto'
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { cp, copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 import sharp from 'sharp'
 
@@ -10,8 +11,13 @@ const DEFAULT_VIEWPORT = { width: 1440, height: 1000 }
 const DEFAULT_OUT_DIR = 'captures'
 const CONFIG_DIR = join(homedir(), '.separateweb-capture')
 const CONFIG_PATH = join(CONFIG_DIR, 'config.json')
+const CODEX_SKILLS_DIR = join(homedir(), '.codex', 'skills')
+const CLAUDE_SKILLS_DIR = join(homedir(), '.claude', 'skills')
 const MAX_ITEMS = 80
 const DEFAULT_MAX_PAGES = 20
+const SKILL_NAME = 'separateweb-capture'
+const PACKAGE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
+const SKILL_SOURCE_DIR = join(PACKAGE_ROOT, 'skills', SKILL_NAME)
 
 const usage = () => {
   console.log(`Usage:
@@ -20,9 +26,13 @@ const usage = () => {
   separateweb patch --clear
   separateweb select <manifest.json>
   separateweb create <manifest.json> --items <indexes> --path <dir>
+  separateweb install-skill [--target codex|claude|both]
+  separateweb-capture [--target codex|claude|both]
   node scripts/capture.mjs capture <url>
 
 Example:
+  npx separateweb-capture
+  npx separateweb-capture --target both
   separateweb patch /absolute/output/path
   separateweb capture https://demo.separateweb.dev/
   separateweb capture https://demo.separateweb.dev/orbit-store --single
@@ -205,6 +215,39 @@ const clearPatchPath = async () => {
 
   console.log(`Config: ${CONFIG_PATH}`)
   console.log('Patch path: (not set)')
+}
+
+const parseInstallTarget = (argv) => {
+  const targetIndex = argv.indexOf('--target')
+  const target = targetIndex === -1 ? 'codex' : argv[targetIndex + 1]
+
+  if (!['codex', 'claude', 'both'].includes(target)) {
+    fail('--target must be codex, claude, or both')
+  }
+
+  return target
+}
+
+const installLocalSkill = async (target) => {
+  const targets = target === 'both'
+    ? [
+        ['Codex', join(CODEX_SKILLS_DIR, SKILL_NAME)],
+        ['Claude', join(CLAUDE_SKILLS_DIR, SKILL_NAME)]
+      ]
+    : target === 'claude'
+      ? [['Claude', join(CLAUDE_SKILLS_DIR, SKILL_NAME)]]
+      : [['Codex', join(CODEX_SKILLS_DIR, SKILL_NAME)]]
+
+  for (const [, skillPath] of targets) {
+    await mkdir(dirname(skillPath), { recursive: true })
+    await cp(SKILL_SOURCE_DIR, skillPath, { recursive: true, force: true })
+  }
+
+  console.log('Installed SeparateWeb Capture skill:')
+  targets.forEach(([label, skillPath]) => {
+    console.log(`- ${label}: ${skillPath}`)
+  })
+  console.log('Use: separateweb capture https://example.com --single')
 }
 
 const readManifest = async (manifestPath) => {
@@ -737,7 +780,20 @@ const capture = async (options) => {
 }
 
 const main = async () => {
-  const options = parseArgs(process.argv.slice(2))
+  const argv = process.argv.slice(2)
+  const invokedName = basename(process.argv[1] || '')
+
+  if (invokedName === 'separateweb-capture' && (argv.length === 0 || argv[0] === '--target')) {
+    await installLocalSkill(parseInstallTarget(argv))
+    return
+  }
+
+  if (argv[0] === 'install-skill') {
+    await installLocalSkill(parseInstallTarget(argv.slice(1)))
+    return
+  }
+
+  const options = parseArgs(argv)
 
   if (options.help || !options.command) {
     usage()

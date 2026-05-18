@@ -12,7 +12,14 @@ separateweb capture <url>
 separateweb patch <path>
 ```
 
-Run the plugin script from the plugin root:
+If installed as a local skill through `npx`, run the package CLI:
+
+```bash
+$separateweb-capture <url>
+$separateweb-capture patch <path>
+```
+
+If running from the plugin root, the local script is also valid:
 
 ```bash
 node scripts/capture.mjs capture <url>

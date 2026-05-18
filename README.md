@@ -39,30 +39,71 @@ plugins/separateweb-capture/skills/separateweb-capture/SKILL.md
 
 After adding the marketplace, install or enable `SeparateWeb Capture` from the Codex Plugins list.
 
-## Run With npx
+## Install As A Local Skill
 
-Run capture without installing globally:
+Requirements:
+
+```text
+Node.js >=18
+npm with npx
+```
+
+Install the skill payload with `npx`:
 
 ```bash
-npx separateweb-capture capture https://example.com --single
+npx separateweb-capture
+```
+
+Install to both Codex and Claude-style skill folders:
+
+```bash
+npx separateweb-capture --target both
+```
+
+Targets:
+
+```text
+--target codex   installs to ~/.codex/skills/separateweb-capture
+--target claude  installs to ~/.claude/skills/separateweb-capture
+--target both    installs to both folders
+```
+
+## Use With npx
+
+Capture one page:
+
+```bash
+npx --yes --package separateweb-capture@latest separateweb capture https://example.com --single
+```
+
+Capture a root URL and crawl same-origin pages:
+
+```bash
+npx --yes --package separateweb-capture@latest separateweb capture https://example.com
 ```
 
 Set a default destination for future captures:
 
 ```bash
-npx separateweb-capture patch /absolute/output/path
+npx --yes --package separateweb-capture@latest separateweb patch /absolute/output/path
+```
+
+List captured items from a manifest:
+
+```bash
+npx --yes --package separateweb-capture@latest separateweb select captures/<jobId>/manifest.json
+```
+
+Export selected items:
+
+```bash
+npx --yes --package separateweb-capture@latest separateweb create captures/<jobId>/manifest.json --items 1,3,5 --path /absolute/output/path
 ```
 
 Preview available commands:
 
 ```bash
-npx separateweb-capture --help
-```
-
-Run from a checked-out copy of this repository:
-
-```bash
-npx --yes ./plugins/separateweb-capture capture https://example.com --single
+npx --yes --package separateweb-capture@latest separateweb --help
 ```
 
 Supported command options:
@@ -77,7 +118,7 @@ Supported command options:
 --help
 ```
 
-The `npx` command runs the capture CLI only; it does not add the Codex plugin marketplace entry.
+The package binaries are `separateweb` and `separateweb-capture`. Use `separateweb-capture` to install the local skill payload. Use `separateweb` to run capture commands through `npx`.
 
 ## What It Does
 
