@@ -1,0 +1,17 @@
+{
+  "name": "separateweb-capture-plugin",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "separateweb": "./scripts/capture.mjs"
+  },
+  "scripts": {
+    "capture": "node ./scripts/capture.mjs capture",
+    "check": "node --check ./scripts/capture.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.60.0",
+    "sharp": "0.34.5"
+  }
+}

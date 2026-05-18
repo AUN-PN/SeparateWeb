@@ -1,15 +1,7 @@
-.nuxt
-.output
 node_modules
-dist
-.data
 .env
 .env.*
 !.env.example
-public/exports/*
-!public/exports/.gitkeep
 
-# wrangler files
-.wrangler
-.dev.vars*
-!.dev.vars.example
+captures
+*.tgz
