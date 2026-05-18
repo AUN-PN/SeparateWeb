@@ -16,8 +16,11 @@ const isCloudflareRuntime = () => {
 
 const loadUiExtractionService = async (): Promise<typeof UiExtractionService> => {
   const servicePath = '../services/ui-extraction.service'
+  const dynamicImport = new Function('specifier', 'return import(specifier)') as (
+    specifier: string
+  ) => Promise<typeof UiExtractionService>
 
-  return import(/* @vite-ignore */ servicePath)
+  return dynamicImport(servicePath)
 }
 
 const isPrivateIPv4 = (address: string) => {
