@@ -113,6 +113,17 @@ Full-page capture:
 
 ![Orbit Store full-page capture](docs/examples/orbit-store/full-page.png)
 
+Capture output now separates visual assets into two folders:
+
+```text
+with-text/full-page.png
+with-text/items/<kind>/*.png
+without-text/full-page.png
+without-text/items/<kind>/*.png
+```
+
+`manifest.json` keeps `items[].image.path` pointed at the current no-text crop, and adds `items[].textImage.path` for the matching with-text crop.
+
 Extracted UI items:
 
 | Kind | Example |

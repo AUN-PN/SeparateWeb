@@ -8,13 +8,12 @@ export const collectBlocks = async (page) => {
       const hasBackgroundColor = backgroundColor && !/rgba?\(\s*0\s*,\s*0\s*,\s*0\s*(?:,\s*0\s*)?\)/.test(backgroundColor) && backgroundColor !== 'transparent'
       const hasBackgroundImage = style.backgroundImage && style.backgroundImage !== 'none'
       const hasBoxShadow = style.boxShadow && style.boxShadow !== 'none'
-      const hasRadius = parseFloat(style.borderRadius) > 0
       const hasOutline = parseFloat(style.outlineWidth) > 0 && style.outlineStyle && style.outlineStyle !== 'none'
       const hasBorder = ['Top', 'Right', 'Bottom', 'Left'].some((side) => {
         return parseFloat(style[`border${side}Width`]) > 0 && style[`border${side}Style`] !== 'none'
       })
 
-      return hasBackgroundColor || hasBackgroundImage || hasBoxShadow || hasRadius || hasOutline || hasBorder
+      return hasBackgroundColor || hasBackgroundImage || hasBoxShadow || hasOutline || hasBorder
     }
     const isVisible = (element, rect, style) => {
       if (rect.width < 4 || rect.height < 4) return false
@@ -82,6 +81,22 @@ export const collectBlocks = async (page) => {
 
       if ((tag === 'html' || tag === 'body') && coversViewport) return true
       if (coversViewport) return true
+      return false
+    }
+    const hasRenderableDescendant = (element) => {
+      return Boolean(element.querySelector('img,svg,canvas,picture,video,input,textarea,select,button,a,[role]'))
+    }
+    const isPaintOnlyDecoration = (element, rect, style, rawLabel) => {
+      const tag = element.tagName.toLowerCase()
+      const className = String(element.getAttribute('class') || '').toLowerCase()
+
+      if (rawLabel) return false
+      if (!['div', 'span'].includes(tag)) return false
+      if (element.currentSrc || element.src) return false
+      if (hasRenderableDescendant(element)) return false
+      if (/blur|gradient|glow|orb|background|decoration|absolute|rounded-full/.test(className)) return true
+      if (style.position === 'absolute' || style.position === 'fixed') return true
+      if (rect.width <= 72 && rect.height <= 72) return true
       return false
     }
     const isOuterUiFrame = (element, rect, style) => {
@@ -200,6 +215,8 @@ export const collectBlocks = async (page) => {
           || element.textContent
           || element.getAttribute('alt')
         )
+        if (isPaintOnlyDecoration(element, rect, style, rawLabel)) return null
+
         const label = (rawLabel || `${element.tagName.toLowerCase()} ${index + 1}`).slice(0, 96)
         const kind = getKind(element, rect, style, label, Boolean(rawLabel))
         const area = width * height

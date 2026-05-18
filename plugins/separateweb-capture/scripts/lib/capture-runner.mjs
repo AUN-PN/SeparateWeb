@@ -31,15 +31,153 @@ import {
   slugFromUrl
 } from './url-utils.mjs'
 
+const primePageForCapture = async (page, viewportHeight) => {
+  await page.evaluate(async (height) => {
+    const waitFrame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+    await document.fonts?.ready?.catch?.(() => undefined)
+
+    const pageHeight = Math.max(
+      document.body?.scrollHeight || 0,
+      document.documentElement?.scrollHeight || 0
+    )
+    const maxScroll = Math.max(0, pageHeight - window.innerHeight)
+    const step = Math.max(200, Math.floor((height || window.innerHeight) * 0.25))
+    const positions = [0]
+
+    for (let y = step; y < maxScroll; y += step) {
+      positions.push(y)
+    }
+
+    if (maxScroll > 0) positions.push(maxScroll)
+
+    for (const y of positions) {
+      window.scrollTo(0, y)
+      await waitFrame()
+      await wait(350)
+    }
+
+    window.scrollTo(0, 0)
+    await waitFrame()
+    await wait(1000)
+  }, viewportHeight).catch(() => undefined)
+}
+
+const captureScrolledFullPage = async (page, outputPath, viewportWidth, viewportHeight) => {
+  const pageSize = await page.evaluate(() => ({
+    width: Math.ceil(Math.max(
+      document.body?.scrollWidth || 0,
+      document.documentElement?.scrollWidth || 0,
+      window.innerWidth
+    )),
+    height: Math.ceil(Math.max(
+      document.body?.scrollHeight || 0,
+      document.documentElement?.scrollHeight || 0,
+      window.innerHeight
+    ))
+  }))
+  const imageWidth = Math.max(viewportWidth, pageSize.width)
+  const imageHeight = Math.max(viewportHeight, pageSize.height)
+  const maxScroll = Math.max(0, imageHeight - viewportHeight)
+  const positions = [0]
+
+  for (let y = viewportHeight; y < maxScroll; y += viewportHeight) {
+    positions.push(y)
+  }
+
+  if (maxScroll > 0 && positions.at(-1) !== maxScroll) positions.push(maxScroll)
+
+  const composites = []
+
+  for (const [index, y] of positions.entries()) {
+    await page.evaluate(async ({ scrollY, hideFixed }) => {
+      const waitFrame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+      let style = document.getElementById('separateweb-capture-hide-fixed')
+
+      if (!style) {
+        style = document.createElement('style')
+        style.id = 'separateweb-capture-hide-fixed'
+        style.textContent = '[data-separateweb-capture-fixed="true"]{visibility:hidden!important}'
+        document.head.append(style)
+      }
+
+      document.querySelectorAll('[data-separateweb-capture-fixed]').forEach((element) => {
+        element.removeAttribute('data-separateweb-capture-fixed')
+      })
+
+      if (hideFixed) {
+        document.querySelectorAll('body *').forEach((element) => {
+          if (getComputedStyle(element).position === 'fixed') {
+            element.setAttribute('data-separateweb-capture-fixed', 'true')
+          }
+        })
+      }
+
+      window.scrollTo(0, scrollY)
+      await waitFrame()
+      await wait(350)
+    }, { scrollY: y, hideFixed: index > 0 })
+
+    composites.push({
+      input: await page.screenshot({ fullPage: false }),
+      left: 0,
+      top: Math.round(y)
+    })
+  }
+
+  await page.evaluate(() => {
+    document.querySelectorAll('[data-separateweb-capture-fixed]').forEach((element) => {
+      element.removeAttribute('data-separateweb-capture-fixed')
+    })
+    document.getElementById('separateweb-capture-hide-fixed')?.remove()
+    window.scrollTo(0, 0)
+  }).catch(() => undefined)
+
+  const { width, height } = await sharp({
+    create: {
+      width: imageWidth,
+      height: imageHeight,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 }
+    }
+  })
+    .composite(composites)
+    .png()
+    .toFile(outputPath)
+
+  const buffer = await sharp(outputPath).png().toBuffer()
+
+  return {
+    buffer,
+    width: width || imageWidth,
+    height: height || imageHeight
+  }
+}
+
+const isLowSignalImage = async (buffer) => {
+  const stats = await sharp(buffer).stats()
+  const alpha = stats.channels[3]
+
+  return Boolean(alpha && alpha.max < 32)
+}
+
 export const capturePage = async (browser, url, outputDir, options) => {
   const width = normalizeDimension(options.width, '--width')
   const height = normalizeDimension(options.height, '--height')
-  const itemDir = join(outputDir, 'items')
+  const itemDir = join(outputDir, 'without-text', 'items')
+  const textItemDir = join(outputDir, 'with-text', 'items')
   const fullPagePath = join(outputDir, 'full-page.png')
   const textlessPagePath = join(outputDir, 'full-page-textless.png')
+  const withTextFullPagePath = join(outputDir, 'with-text', 'full-page.png')
+  const withoutTextFullPagePath = join(outputDir, 'without-text', 'full-page.png')
   const manifestPath = join(outputDir, 'manifest.json')
 
   await mkdir(itemDir, { recursive: true })
+  await mkdir(textItemDir, { recursive: true })
+  await mkdir(join(outputDir, 'with-text'), { recursive: true })
+  await mkdir(join(outputDir, 'without-text'), { recursive: true })
 
   const page = await browser.newPage({
     viewport: { width, height },
@@ -52,17 +190,17 @@ export const capturePage = async (browser, url, outputDir, options) => {
       timeout: 45000
     })
     await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined)
+    await primePageForCapture(page, height)
 
     const title = await page.title()
-    const screenshotBuffer = await page.screenshot({
-      fullPage: true,
-      path: fullPagePath
-    })
-    const metadata = await sharp(screenshotBuffer).metadata()
+    const scrolledScreenshot = await captureScrolledFullPage(page, fullPagePath, width, height)
+    const screenshotBuffer = scrolledScreenshot.buffer
+    await writeFile(withTextFullPagePath, screenshotBuffer)
     const rawItems = await collectBlocks(page)
     const textlessScreenshotBuffer = await captureTextlessPage(page, textlessPagePath)
-    const imageWidth = metadata.width || width
-    const imageHeight = metadata.height || height
+    await writeFile(withoutTextFullPagePath, textlessScreenshotBuffer)
+    const imageWidth = scrolledScreenshot.width || width
+    const imageHeight = scrolledScreenshot.height || height
     const items = []
 
     for (const [index, item] of rawItems.entries()) {
@@ -77,8 +215,10 @@ export const capturePage = async (browser, url, outputDir, options) => {
       if (cropWidth < 1 || cropHeight < 1) continue
 
       const kindDir = join(itemDir, item.kind)
+      const textKindDir = join(textItemDir, item.kind)
       const imageName = `${String(index + 1).padStart(3, '0')}-${item.id}-${item.kind}.png`
       const imagePath = join(kindDir, imageName)
+      const textImagePath = join(textKindDir, imageName)
       const mediaSource = await readMediaSource(item)
       const isolatedScreenshotBuffer = await captureIsolatedItemPage(page, item)
       const itemScreenshotBuffer = isolatedScreenshotBuffer || await captureInnerHiddenPage(page, item) || textlessScreenshotBuffer
@@ -114,9 +254,35 @@ export const capturePage = async (browser, url, outputDir, options) => {
           }])
       }
 
+      const textCrop = sharp(screenshotBuffer)
+        .extract({
+          left,
+          top,
+          width: cropWidth,
+          height: cropHeight
+        })
+
+      if (mask) {
+        textCrop
+          .ensureAlpha()
+          .composite([{
+            input: await sharp(mask)
+              .resize(cropWidth, cropHeight, { fit: 'fill' })
+              .png()
+              .toBuffer(),
+            blend: 'dest-in'
+          }])
+      }
+
       let outputBuffer = await crop
         .png()
         .toBuffer()
+      let textOutputBuffer = await textCrop
+        .png()
+        .toBuffer()
+
+      if (await isLowSignalImage(outputBuffer)) continue
+
       const alphaCleanup = useBrowserShape
         ? await cleanupAlphaHalo(outputBuffer, alphaCleanupThreshold(item))
         : {
@@ -124,8 +290,16 @@ export const capturePage = async (browser, url, outputDir, options) => {
             trim: null,
             alphaThreshold: null
           }
+      const textAlphaCleanup = useBrowserShape
+        ? await cleanupAlphaHalo(textOutputBuffer, alphaCleanupThreshold(item))
+        : {
+            buffer: textOutputBuffer,
+            trim: null,
+            alphaThreshold: null
+          }
 
       outputBuffer = alphaCleanup.buffer
+      textOutputBuffer = textAlphaCleanup.buffer
       const edgeInsets = edgeCleanupInsets(item)
       let edgeTrim = null
       const edgeMetadata = await sharp(outputBuffer).metadata()
@@ -144,6 +318,15 @@ export const capturePage = async (browser, url, outputDir, options) => {
           })
           .png()
           .toBuffer()
+        textOutputBuffer = await sharp(textOutputBuffer)
+          .extract({
+            left: edgeInsets.left,
+            top: edgeInsets.top,
+            width: edgeTrimWidth,
+            height: edgeTrimHeight
+          })
+          .png()
+          .toBuffer()
         edgeTrim = {
           ...edgeInsets,
           width: edgeTrimWidth,
@@ -152,12 +335,19 @@ export const capturePage = async (browser, url, outputDir, options) => {
       }
 
       const outputMetadata = await sharp(outputBuffer).metadata()
+      const textOutputMetadata = await sharp(textOutputBuffer).metadata()
 
       await sharp(outputBuffer)
         .png()
         .toFile(imagePath)
+      await mkdir(textKindDir, { recursive: true })
+      await sharp(textOutputBuffer)
+        .png()
+        .toFile(textImagePath)
       const outputWidth = outputMetadata.width || cropWidth
       const outputHeight = outputMetadata.height || cropHeight
+      const textOutputWidth = textOutputMetadata.width || cropWidth
+      const textOutputHeight = textOutputMetadata.height || cropHeight
       const outputBounds = alphaCleanup.trim
         ? {
             x: left + alphaCleanup.trim.x + (edgeTrim?.left || 0),
@@ -170,6 +360,19 @@ export const capturePage = async (browser, url, outputDir, options) => {
             y: top + (edgeTrim?.top || 0),
             width: outputWidth,
             height: outputHeight
+          }
+      const textOutputBounds = textAlphaCleanup.trim
+        ? {
+            x: left + textAlphaCleanup.trim.x + (edgeTrim?.left || 0),
+            y: top + textAlphaCleanup.trim.y + (edgeTrim?.top || 0),
+            width: textOutputWidth,
+            height: textOutputHeight
+          }
+        : {
+            x: left + (edgeTrim?.left || 0),
+            y: top + (edgeTrim?.top || 0),
+            width: textOutputWidth,
+            height: textOutputHeight
           }
 
       items.push({
@@ -203,6 +406,33 @@ export const capturePage = async (browser, url, outputDir, options) => {
           innerContentHidden: shouldHideInnerContent(item),
           outerEffectsHidden: shouldHideOuterEffects(item),
           textHidden: true
+        },
+        textImage: {
+          path: textImagePath,
+          width: textOutputWidth,
+          height: textOutputHeight,
+          bounds: textOutputBounds,
+          rawBounds: {
+            x: left,
+            y: top,
+            width: cropWidth,
+            height: cropHeight
+          },
+          cropPadding,
+          cornerRadii,
+          maskRadii,
+          transparentCorners: Boolean(mask),
+          browserShape: useBrowserShape,
+          alphaCleanup: textAlphaCleanup.trim
+            ? {
+                trim: textAlphaCleanup.trim,
+                alphaThreshold: textAlphaCleanup.alphaThreshold
+              }
+            : null,
+          edgeCleanup: edgeTrim,
+          sourceUrl: item.sourceUrl || '',
+          sourceAsset: false,
+          textHidden: false
         }
       })
     }
@@ -222,8 +452,18 @@ export const capturePage = async (browser, url, outputDir, options) => {
         width: imageWidth,
         height: imageHeight
       },
+      withTextImage: {
+        path: withTextFullPagePath,
+        width: imageWidth,
+        height: imageHeight
+      },
       textlessImage: {
         path: textlessPagePath,
+        width: imageWidth,
+        height: imageHeight
+      },
+      withoutTextImage: {
+        path: withoutTextFullPagePath,
         width: imageWidth,
         height: imageHeight
       },
