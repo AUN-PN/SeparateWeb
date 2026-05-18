@@ -1,13 +1,13 @@
 # SeparateWeb Capture
 
-SeparateWeb Capture เป็น Codex plugin สำหรับเก็บหน้าเว็บเป็นชุด asset ที่ใช้ต่อได้ทันที: full-page screenshot, cropped UI item PNGs, และ JSON manifests.
+SeparateWeb Capture is a Codex plugin for capturing web pages as ready-to-use visual assets: full-page screenshots, cropped UI item PNGs, and JSON manifests.
 
-ใช้เมื่ออยากให้ Codex เปิด URL, capture layout จริง, แยกชิ้นส่วน UI, แล้วส่ง path ของผลลัพธ์กลับมาให้เอาไปอ้างอิงในงาน design, frontend implementation, หรือ visual QA.
+Use it when Codex needs to open a URL, capture the real layout, extract UI pieces, and return output paths for design, frontend implementation, or visual QA.
 
 ## Status
 
 - Plugin-only repository
-- ไม่ใช้ Nuxt, Cloudflare Worker, หรือ web UI
+- Does not use Nuxt, Cloudflare Worker, or a web UI
 - License: MIT
 - Runtime script: `plugins/separateweb-capture/scripts/capture.mjs`
 
@@ -41,7 +41,7 @@ Ask Codex:
 ```text
 separateweb capture https://example.com
 separateweb capture https://example.com/docs --single
-separateweb patch /Users/onecrop/Desktop/patches
+separateweb patch /absolute/output/path
 ```
 
 Codex skill:
@@ -89,26 +89,6 @@ captures/<jobId>/manifest.json
 captures/<jobId>/items/<kind>/*.png
 ```
 
-## Validation
-
-```bash
-cd plugins/separateweb-capture
-npm run check
-node scripts/capture.mjs --help
-```
-
-## Help And Ownership
-
-Open an issue or inspect:
-
-```text
-plugins/separateweb-capture/README.md
-plugins/separateweb-capture/skills/separateweb-capture/SKILL.md
-plugins/separateweb-capture/.codex-plugin/plugin.json
-```
-
-Maintainer: `onecrop`
-
 ## License
 
-MIT. See [LICENSE](./LICENSE) and [plugins/separateweb-capture/LICENSE](./plugins/separateweb-capture/LICENSE).
+MIT License.

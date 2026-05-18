@@ -23,11 +23,11 @@ const usage = () => {
   node scripts/capture.mjs capture <url>
 
 Example:
-  separateweb patch /Users/onecrop/Desktop/patches
+  separateweb patch /absolute/output/path
   separateweb capture https://demo.separateweb.dev/
   separateweb capture https://demo.separateweb.dev/orbit-store --single
   separateweb select captures/<jobId>/manifest.json
-  separateweb create captures/<jobId>/manifest.json --items 1,3,5 --path /Users/onecrop/Desktop/patches`)
+  separateweb create captures/<jobId>/manifest.json --items 1,3,5 --path /absolute/output/path`)
 }
 
 const fail = (message, code = 1) => {

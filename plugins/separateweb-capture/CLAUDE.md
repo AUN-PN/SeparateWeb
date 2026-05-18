@@ -14,7 +14,7 @@ Claude Code instructions for this package.
 ```bash
 npm install
 npm link
-separateweb patch /Users/onecrop/Desktop/patches
+separateweb patch /absolute/output/path
 separateweb capture https://domain.com
 separateweb capture https://domain.com --single
 separateweb capture https://domain.com/about
@@ -24,7 +24,7 @@ separateweb capture https://domain.com/about --all
 ## Direct script
 
 ```bash
-node scripts/capture.mjs patch /Users/onecrop/Desktop/patches
+node scripts/capture.mjs patch /absolute/output/path
 node scripts/capture.mjs capture https://domain.com --single
 ```
 
@@ -32,5 +32,5 @@ node scripts/capture.mjs capture https://domain.com --single
 
 ```bash
 separateweb select <manifest.json>
-separateweb create <manifest.json> --items 1,3,5 --path /Users/onecrop/Desktop/patches
+separateweb create <manifest.json> --items 1,3,5 --path /absolute/output/path
 ```

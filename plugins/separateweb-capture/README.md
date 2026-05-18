@@ -34,7 +34,7 @@ separateweb capture https://example.com
 separateweb capture https://example.com --single
 separateweb capture https://example.com/docs
 separateweb capture https://example.com/docs --all
-separateweb patch /Users/onecrop/Desktop/patches
+separateweb patch /absolute/output/path
 ```
 
 Codex should run the script from this plugin root:
@@ -94,26 +94,19 @@ separateweb select captures/<jobId>/page-001-<slug>/manifest.json
 Export selected items:
 
 ```bash
-separateweb create captures/<jobId>/page-001-<slug>/manifest.json --items 1,3,5 --path /Users/onecrop/Desktop/patches
+separateweb create captures/<jobId>/page-001-<slug>/manifest.json --items 1,3,5 --path /absolute/output/path
 ```
 
 Set the default export path:
 
 ```bash
-separateweb patch /Users/onecrop/Desktop/patches
+separateweb patch /absolute/output/path
 ```
 
 Clear it:
 
 ```bash
 separateweb patch --clear
-```
-
-## Validation
-
-```bash
-npm run check
-node scripts/capture.mjs --help
 ```
 
 ## Troubleshooting

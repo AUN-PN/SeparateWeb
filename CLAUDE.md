@@ -19,13 +19,13 @@ npm link
 ## Set default output path
 
 ```bash
-separateweb patch /Users/onecrop/Desktop/patches
+separateweb patch /absolute/output/path
 ```
 
 This writes:
 
 ```text
-/Users/onecrop/.separateweb-capture/config.json
+~/.separateweb-capture/config.json
 ```
 
 ## Capture rules
@@ -58,5 +58,5 @@ Single-page output can write directly under `<patchPath>/<jobId>/`.
 
 ```bash
 separateweb select <manifest.json>
-separateweb create <manifest.json> --items all --path /Users/onecrop/Desktop/patches
+separateweb create <manifest.json> --items all --path /absolute/output/path
 ```
