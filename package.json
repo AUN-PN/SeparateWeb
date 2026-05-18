@@ -19,7 +19,8 @@
     "sharp": "0.34.5"
   },
   "optionalDependencies": {
-    "@oxc-parser/binding-linux-x64-gnu": "0.131.0"
+    "@oxc-parser/binding-linux-x64-gnu": "0.131.0",
+    "@oxc-transform/binding-linux-x64-gnu": "0.131.0"
   },
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.14.0",
