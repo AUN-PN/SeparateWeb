@@ -44,16 +44,6 @@ separateweb capture https://domain.com/about --all
 # crawl from /about
 ```
 
-## Output
-
-```text
-<patchPath>/<jobId>/site-manifest.json
-<patchPath>/<jobId>/page-001-<slug>/manifest.json
-<patchPath>/<jobId>/page-001-<slug>/items/<kind>/*.png
-```
-
-Single-page output can write directly under `<patchPath>/<jobId>/`.
-
 ## Select from existing manifest
 
 ```bash

@@ -1,6 +1,6 @@
 {
   "name": "separateweb-capture",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "Capture web pages into full-page screenshots, grouped UI item crops, and JSON manifests.",
   "type": "module",
   "license": "MIT",

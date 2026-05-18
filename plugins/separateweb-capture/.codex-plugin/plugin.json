@@ -1,6 +1,6 @@
 {
   "name": "separateweb-capture",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "Capture web pages into full-page screenshots, UI item crops, and a JSON manifest from Codex.",
   "author": {
     "name": "AUN-PN",
@@ -8,12 +8,7 @@
     "url": ""
   },
   "license": "MIT",
-  "keywords": [
-    "capture",
-    "screenshot",
-    "playwright",
-    "ui-extraction"
-  ],
+  "keywords": ["capture", "screenshot", "playwright", "ui-extraction"],
   "skills": "./skills/",
   "interface": {
     "displayName": "SeparateWeb Capture",
@@ -21,10 +16,7 @@
     "longDescription": "Adds a Codex skill for capturing a URL with Playwright, saving a full-page screenshot, cropped UI items, and a manifest JSON.",
     "developerName": "AUN-PN",
     "category": "Productivity",
-    "capabilities": [
-      "Capture",
-      "Write"
-    ],
+    "capabilities": ["Capture", "Write"],
     "defaultPrompt": [
       "separateweb capture https://example.com",
       "Capture this page into UI crops",

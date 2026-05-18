@@ -7,10 +7,51 @@ Use it when Codex needs real page evidence before implementing or reviewing UI.
 ## Status
 
 - Plugin name: `separateweb-capture`
-- Version: `0.1.1`
+- Version: `1.0.0`
 - License: MIT
 - Runtime: Node.js `>=18`
 - Capture engine: Playwright + Sharp
+
+## Install With npx
+
+Run this plugin from the repository root:
+
+```bash
+npx --yes ./plugins/separateweb-capture --help
+npx --yes ./plugins/separateweb-capture capture https://example.com --single
+```
+
+Run it by package name when your npm registry has `separateweb-capture`:
+
+```bash
+npx --yes separateweb-capture capture https://example.com --single
+```
+
+Set a default destination:
+
+```bash
+npx --yes ./plugins/separateweb-capture patch /absolute/output/path
+```
+
+## Install As A Codex Plugin
+
+Use the marketplace file at the repository root:
+
+```text
+.agents/plugins/marketplace.json
+```
+
+Then install:
+
+```text
+separateweb-capture
+```
+
+After installation, start a new Codex session and ask:
+
+```text
+separateweb capture https://example.com --single
+```
 
 ## What's Included
 
@@ -62,26 +103,6 @@ separateweb create <manifest.json> --items <indexes> --path <dir>
 - `capture https://example.com/docs` captures only `/docs`.
 - `capture https://example.com/docs --all` crawls same-origin paths starting from `/docs`.
 - `--max-pages` accepts `1` to `200`.
-
-## Output
-
-Root crawl:
-
-```text
-captures/<jobId>/site-manifest.json
-captures/<jobId>/page-001-<slug>/full-page.png
-captures/<jobId>/page-001-<slug>/manifest.json
-captures/<jobId>/page-001-<slug>/items/<kind>/*.png
-```
-
-Single page:
-
-```text
-captures/<jobId>/site-manifest.json
-captures/<jobId>/full-page.png
-captures/<jobId>/manifest.json
-captures/<jobId>/items/<kind>/*.png
-```
 
 ## Selection Workflow
 

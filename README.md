@@ -11,6 +11,49 @@ Use it when Codex needs to open a URL, capture the real layout, extract UI piece
 - License: MIT
 - Runtime script: `plugins/separateweb-capture/scripts/capture.mjs`
 
+## Install With npx
+
+Run from a checked-out copy of this repository:
+
+```bash
+npx --yes ./plugins/separateweb-capture --help
+npx --yes ./plugins/separateweb-capture capture https://example.com --single
+```
+
+Run from the npm package name when it is available in your registry:
+
+```bash
+npx --yes separateweb-capture capture https://example.com --single
+```
+
+Use `patch` to set a default destination before capture:
+
+```bash
+npx --yes ./plugins/separateweb-capture patch /absolute/output/path
+```
+
+## Install As A Codex Plugin
+
+This repository includes a local Codex marketplace file:
+
+```text
+.agents/plugins/marketplace.json
+```
+
+That marketplace exposes:
+
+```text
+separateweb-capture
+```
+
+Install flow:
+
+1. Open Codex plugin settings.
+2. Add the local marketplace from `.agents/plugins/marketplace.json`.
+3. Install `separateweb-capture`.
+4. Start a new Codex session so the skill list refreshes.
+5. Ask Codex to run `separateweb capture https://example.com --single`.
+
 ## What It Does
 
 - Capture full-page screenshots
@@ -68,26 +111,6 @@ separateweb create <manifest.json> --items <indexes> --path <dir>
 - `capture https://example.com/docs` captures only `/docs`.
 - `capture https://example.com/docs --all` crawls same-origin paths starting from `/docs`.
 - `--max-pages` accepts `1` to `200`.
-
-## Output
-
-Root crawl:
-
-```text
-captures/<jobId>/site-manifest.json
-captures/<jobId>/page-001-<slug>/full-page.png
-captures/<jobId>/page-001-<slug>/manifest.json
-captures/<jobId>/page-001-<slug>/items/<kind>/*.png
-```
-
-Single page:
-
-```text
-captures/<jobId>/site-manifest.json
-captures/<jobId>/full-page.png
-captures/<jobId>/manifest.json
-captures/<jobId>/items/<kind>/*.png
-```
 
 ## License
 
