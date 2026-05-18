@@ -40,10 +40,27 @@ captures/<jobId>/page-001-<slug>/items/<kind>/*.png
 
 Default:
 
-- `capture https://example.com/` = crawl ทุก path ในเว็บเดียวกัน
+- `capture https://example.com` หรือ `capture https://example.com/` = crawl ทุก path ในเว็บเดียวกัน
+- `capture https://example.com --single` = แคปเฉพาะหน้าแรก
 - `capture https://example.com/path` = แคปเฉพาะ path นั้น
 - ใช้ `--single` เพื่อบังคับแคปหน้าเดียว
 - ใช้ `--all` เพื่อบังคับ crawl จาก path ใดก็ได้
+
+ตัวอย่างเลือกโหมด:
+
+```bash
+separateweb capture https://domain.com
+# crawl ทุก path
+
+separateweb capture https://domain.com --single
+# แคปเฉพาะหน้าแรก
+
+separateweb capture https://domain.com/about
+# แคปเฉพาะ /about
+
+separateweb capture https://domain.com/about --all
+# crawl จาก /about
+```
 
 เลือก item แล้วสร้าง patch ลง path ในเครื่อง:
 

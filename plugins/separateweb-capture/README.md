@@ -24,9 +24,26 @@ node scripts/capture.mjs capture https://example.com
 
 ค่า default ของ `capture`:
 
-- URL root เช่น `https://example.com/` จะ crawl ทุก path ใน origin เดียวกัน
+- URL root เช่น `https://example.com` หรือ `https://example.com/` จะ crawl ทุก path ใน origin เดียวกัน
+- ถ้าต้องการแคปเฉพาะหน้าแรก ให้ใช้ `--single`
 - URL มี path เช่น `https://example.com/docs` จะแคปเฉพาะหน้านั้น
 - item crops แยกตาม type ใน `items/<kind>/`
+
+ตัวอย่าง:
+
+```bash
+node scripts/capture.mjs capture https://domain.com
+# crawl ทุก path
+
+node scripts/capture.mjs capture https://domain.com --single
+# แคปเฉพาะหน้าแรก
+
+node scripts/capture.mjs capture https://domain.com/docs
+# แคปเฉพาะ /docs
+
+node scripts/capture.mjs capture https://domain.com/docs --all
+# crawl จาก /docs
+```
 
 Root crawl output:
 

@@ -33,11 +33,21 @@ Optional flags:
 
 Capture behavior:
 
-- `capture https://example.com/` crawls same-origin paths by default.
+- `capture https://example.com` and `capture https://example.com/` crawl same-origin paths by default.
+- `capture https://example.com --single` captures only the home page.
 - `capture https://example.com/path` captures only that page by default.
 - Use `--single` to force one page.
 - Use `--all` to force same-origin crawl from any start URL.
 - Captured items are grouped by type under `items/<kind>/`.
+
+Examples:
+
+```bash
+node scripts/capture.mjs capture https://domain.com
+node scripts/capture.mjs capture https://domain.com --single
+node scripts/capture.mjs capture https://domain.com/about
+node scripts/capture.mjs capture https://domain.com/about --all
+```
 
 Patch selection:
 
