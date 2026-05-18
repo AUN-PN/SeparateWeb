@@ -1,5 +1,7 @@
 # SeparateWeb Capture
 
+Website screenshot and UI crop extraction for Codex.
+
 SeparateWeb Capture is a Codex plugin for capturing web pages as ready-to-use visual assets: full-page screenshots, cropped UI item PNGs, and JSON manifests.
 
 Use it when Codex needs to open a URL, capture the real layout, extract UI pieces, and return output paths for design, frontend implementation, or visual QA.
@@ -11,48 +13,71 @@ Use it when Codex needs to open a URL, capture the real layout, extract UI piece
 - License: MIT
 - Runtime script: `plugins/separateweb-capture/scripts/capture.mjs`
 
-## Install With npx
+## Install As A Codex Plugin
+
+In Codex, open Plugins, choose Add marketplace, then use:
+
+```text
+Source:
+https://github.com/AUN-PN/SeparateWeb.git
+
+Git ref:
+main
+
+Sparse paths:
+```
+
+Leave `Sparse paths` empty.
+
+The Codex marketplace metadata lives at:
+
+```text
+.agents/plugins/marketplace.json
+plugins/separateweb-capture/.codex-plugin/plugin.json
+plugins/separateweb-capture/skills/separateweb-capture/SKILL.md
+```
+
+After adding the marketplace, install or enable `SeparateWeb Capture` from the Codex Plugins list.
+
+## Run With npx
+
+Run capture without installing globally:
+
+```bash
+npx separateweb-capture capture https://example.com --single
+```
+
+Set a default destination for future captures:
+
+```bash
+npx separateweb-capture patch /absolute/output/path
+```
+
+Preview available commands:
+
+```bash
+npx separateweb-capture --help
+```
 
 Run from a checked-out copy of this repository:
 
 ```bash
-npx --yes ./plugins/separateweb-capture --help
 npx --yes ./plugins/separateweb-capture capture https://example.com --single
 ```
 
-Run from the npm package name when it is available in your registry:
-
-```bash
-npx --yes separateweb-capture capture https://example.com --single
-```
-
-Use `patch` to set a default destination before capture:
-
-```bash
-npx --yes ./plugins/separateweb-capture patch /absolute/output/path
-```
-
-## Install As A Codex Plugin
-
-This repository includes a local Codex marketplace file:
+Supported command options:
 
 ```text
-.agents/plugins/marketplace.json
+--out <dir>
+--width <px>
+--height <px>
+--max-pages <n>
+--single
+--all
+--help
 ```
 
-That marketplace exposes:
-
-```text
-separateweb-capture
-```
-
-Install flow:
-
-1. Open Codex plugin settings.
-2. Add the local marketplace from `.agents/plugins/marketplace.json`.
-3. Install `separateweb-capture`.
-4. Start a new Codex session so the skill list refreshes.
-5. Ask Codex to run `separateweb capture https://example.com --single`.
+The `npx` command runs the capture CLI only; it does not add the Codex plugin marketplace entry.
 
 ## What It Does
 
@@ -62,6 +87,15 @@ Install flow:
 - Write crawl-level `site-manifest.json`
 - Crawl same-origin paths from root URLs
 - Capture one page with `--single`
+
+## Use Cases
+
+- Website screenshot automation for UI review
+- Playwright screenshot capture for frontend reference
+- UI crop extraction from live web pages
+- Visual QA evidence for design implementation
+- Web page capture for AI coding agents
+- Codex plugin workflow for UI inspection
 
 ## Plugin Layout
 

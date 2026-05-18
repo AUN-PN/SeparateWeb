@@ -1,5 +1,7 @@
 # SeparateWeb Capture
 
+Website screenshot, web page capture, and UI crop extraction for Codex.
+
 SeparateWeb Capture is a Codex plugin that turns web pages into inspectable visual assets: full-page screenshots, grouped UI crops, and JSON manifests.
 
 Use it when Codex needs real page evidence before implementing or reviewing UI.
@@ -12,46 +14,71 @@ Use it when Codex needs real page evidence before implementing or reviewing UI.
 - Runtime: Node.js `>=18`
 - Capture engine: Playwright + Sharp
 
-## Install With npx
-
-Run this plugin from the repository root:
-
-```bash
-npx --yes ./plugins/separateweb-capture --help
-npx --yes ./plugins/separateweb-capture capture https://example.com --single
-```
-
-Run it by package name when your npm registry has `separateweb-capture`:
-
-```bash
-npx --yes separateweb-capture capture https://example.com --single
-```
-
-Set a default destination:
-
-```bash
-npx --yes ./plugins/separateweb-capture patch /absolute/output/path
-```
-
 ## Install As A Codex Plugin
 
-Use the marketplace file at the repository root:
+In Codex, open Plugins, choose Add marketplace, then use:
+
+```text
+Source:
+https://github.com/AUN-PN/SeparateWeb.git
+
+Git ref:
+main
+
+Sparse paths:
+```
+
+Leave `Sparse paths` empty.
+
+The Codex marketplace metadata lives at:
 
 ```text
 .agents/plugins/marketplace.json
+plugins/separateweb-capture/.codex-plugin/plugin.json
+plugins/separateweb-capture/skills/separateweb-capture/SKILL.md
 ```
 
-Then install:
+After adding the marketplace, install or enable `SeparateWeb Capture` from the Codex Plugins list.
+
+## Run With npx
+
+Run capture without installing globally:
+
+```bash
+npx separateweb-capture capture https://example.com --single
+```
+
+Set a default destination for future captures:
+
+```bash
+npx separateweb-capture patch /absolute/output/path
+```
+
+Preview available commands:
 
 ```text
-separateweb-capture
+npx separateweb-capture --help
 ```
 
-After installation, start a new Codex session and ask:
+Run from a checked-out copy of this repository:
+
+```bash
+npx --yes ./plugins/separateweb-capture capture https://example.com --single
+```
+
+Supported command options:
 
 ```text
-separateweb capture https://example.com --single
+--out <dir>
+--width <px>
+--height <px>
+--max-pages <n>
+--single
+--all
+--help
 ```
+
+The `npx` command runs the capture CLI only; it does not add the Codex plugin marketplace entry.
 
 ## What's Included
 
@@ -65,6 +92,15 @@ LICENSE                             MIT license
 ```
 
 The required Codex entrypoint is `.codex-plugin/plugin.json`. The skill in `skills/separateweb-capture/SKILL.md` defines when Codex should use this plugin.
+
+## Use Cases
+
+- Website screenshot tool for frontend teams
+- Playwright screenshot capture for visual QA
+- UI crop extraction from live web pages
+- Web design asset capture for implementation references
+- AI coding agent visual context from real URLs
+- Codex plugin for webpage inspection
 
 ## Codex Usage
 
