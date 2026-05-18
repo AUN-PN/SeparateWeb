@@ -6,14 +6,6 @@ SeparateWeb Capture is a Codex plugin that turns web pages into inspectable visu
 
 Use it when Codex needs real page evidence before implementing or reviewing UI.
 
-## Status
-
-- Plugin name: `separateweb-capture`
-- Version: `1.0.0`
-- License: MIT
-- Runtime: Node.js `>=18`
-- Capture engine: Playwright + Sharp
-
 ## Install As A Codex Plugin
 
 In Codex, open Plugins, choose Add marketplace, then use:
