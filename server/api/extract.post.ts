@@ -60,13 +60,24 @@ const proxyExtractRequest = async (
 ) => {
   const endpoint = normalizeExtractServiceEndpoint(serviceUrl)
 
-  return $fetch(endpoint, {
-    method: 'POST',
-    body,
-    headers: token
-      ? { authorization: `Bearer ${token}` }
-      : undefined
-  })
+  try {
+    return await $fetch(endpoint, {
+      method: 'POST',
+      body,
+      headers: token
+        ? { authorization: `Bearer ${token}` }
+        : undefined
+    })
+  } catch (error) {
+    if (error && typeof error === 'object' && 'statusCode' in error) {
+      throw error
+    }
+
+    throw createError({
+      statusCode: 502,
+      message: 'Extraction service is unreachable.'
+    })
+  }
 }
 
 const loadUiExtractionService = async (): Promise<typeof UiExtractionService> => {
@@ -165,11 +176,11 @@ export default defineEventHandler(async (event) => {
   const body = await readBody<UiExtractionRequest>(event)
   const config = getExtractRuntimeConfig(event)
 
-  if (isCloudflareRuntime()) {
-    if (config.extractServiceUrl) {
-      return proxyExtractRequest(config.extractServiceUrl, config.extractServiceToken, body)
-    }
+  if (config.extractServiceUrl) {
+    return proxyExtractRequest(config.extractServiceUrl, config.extractServiceToken, body)
+  }
 
+  if (isCloudflareRuntime()) {
     throw createError({
       statusCode: 501,
       message: 'UI extraction requires EXTRACT_SERVICE_URL on the Cloudflare runtime.'
@@ -218,12 +229,22 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const { crawlAndExtractUiFromUrl } = await loadUiExtractionService()
+    const { crawlAndExtractUiFromUrl } = await loadUiExtractionService().catch(() => {
+      throw createError({
+        statusCode: 501,
+        message: 'UI extraction requires EXTRACT_SERVICE_URL on this runtime.'
+      })
+    })
 
     return crawlAndExtractUiFromUrl(parsedUrl.toString(), body.maxPages)
   }
 
-  const { extractUiFromUrl } = await loadUiExtractionService()
+  const { extractUiFromUrl } = await loadUiExtractionService().catch(() => {
+    throw createError({
+      statusCode: 501,
+      message: 'UI extraction requires EXTRACT_SERVICE_URL on this runtime.'
+    })
+  })
 
   return extractUiFromUrl(parsedUrl.toString())
 })
