@@ -1,14 +1,24 @@
 # SeparateWeb Capture
 
-Codex plugin สำหรับ capture หน้าเว็บเป็น asset ที่เอาไปใช้ต่อได้ทันที:
+SeparateWeb Capture เป็น Codex plugin สำหรับเก็บหน้าเว็บเป็นชุด asset ที่ใช้ต่อได้ทันที: full-page screenshot, cropped UI item PNGs, และ JSON manifests.
 
-- full-page screenshot
-- cropped UI item PNGs
-- JSON manifests
-- same-origin crawl สำหรับ URL root
-- one-page capture สำหรับ URL path หรือ `--single`
+ใช้เมื่ออยากให้ Codex เปิด URL, capture layout จริง, แยกชิ้นส่วน UI, แล้วส่ง path ของผลลัพธ์กลับมาให้เอาไปอ้างอิงในงาน design, frontend implementation, หรือ visual QA.
 
-Repo นี้เป็น plugin-only ไม่ใช้ Nuxt, Cloudflare Worker, หรือ web UI แล้ว
+## Status
+
+- Plugin-only repository
+- ไม่ใช้ Nuxt, Cloudflare Worker, หรือ web UI
+- License: MIT
+- Runtime script: `plugins/separateweb-capture/scripts/capture.mjs`
+
+## What It Does
+
+- Capture full-page screenshots
+- Crop UI elements into `items/<kind>/*.png`
+- Write per-page `manifest.json`
+- Write crawl-level `site-manifest.json`
+- Crawl same-origin paths from root URLs
+- Capture one page with `--single`
 
 ## Plugin Layout
 
@@ -22,11 +32,11 @@ plugins/separateweb-capture/
   LICENSE
 ```
 
-ตาม Codex plugin layout: plugin อยู่ใต้ `plugins/<name>/`, มี `.codex-plugin/plugin.json` เป็น manifest หลัก และมี companion surfaces เช่น `skills/`, `scripts/`, `assets/` ตามที่ plugin ต้องใช้
+Codex reads `.codex-plugin/plugin.json` as the plugin manifest. The skill file tells Codex when this plugin applies and which script command to run.
 
-## Use In Codex
+## Quick Start In Codex
 
-หลังติดตั้ง plugin แล้ว ใช้ prompt:
+Ask Codex:
 
 ```text
 separateweb capture https://example.com
@@ -34,30 +44,13 @@ separateweb capture https://example.com/docs --single
 separateweb patch /Users/onecrop/Desktop/patches
 ```
 
-Skill ที่ Codex โหลด:
+Codex skill:
 
 ```text
 plugins/separateweb-capture/skills/separateweb-capture/SKILL.md
 ```
 
-## Local CLI
-
-```bash
-cd plugins/separateweb-capture
-npm install
-npm run check
-npm run capture -- https://example.com --single
-```
-
-หรือ link เป็น command:
-
-```bash
-cd plugins/separateweb-capture
-npm link
-separateweb capture https://example.com
-```
-
-## Commands
+## Codex Commands
 
 ```bash
 separateweb capture <url> [--out <dir>] [--width <px>] [--height <px>] [--max-pages <n>] [--single|--all]
@@ -66,6 +59,15 @@ separateweb patch --clear
 separateweb select <manifest.json>
 separateweb create <manifest.json> --items <indexes> --path <dir>
 ```
+
+## Capture Rules
+
+- `capture https://example.com` crawls same-origin paths.
+- `capture https://example.com/` crawls same-origin paths.
+- `capture https://example.com --single` captures only the root page.
+- `capture https://example.com/docs` captures only `/docs`.
+- `capture https://example.com/docs --all` crawls same-origin paths starting from `/docs`.
+- `--max-pages` accepts `1` to `200`.
 
 ## Output
 
@@ -87,18 +89,25 @@ captures/<jobId>/manifest.json
 captures/<jobId>/items/<kind>/*.png
 ```
 
-## Publish Package
+## Validation
 
 ```bash
 cd plugins/separateweb-capture
-npm publish --access public
+npm run check
+node scripts/capture.mjs --help
 ```
 
-Install from npm:
+## Help And Ownership
 
-```bash
-npm install -g separateweb-capture
+Open an issue or inspect:
+
+```text
+plugins/separateweb-capture/README.md
+plugins/separateweb-capture/skills/separateweb-capture/SKILL.md
+plugins/separateweb-capture/.codex-plugin/plugin.json
 ```
+
+Maintainer: `onecrop`
 
 ## License
 

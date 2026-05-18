@@ -1,30 +1,29 @@
 # SeparateWeb Capture
 
-Capture a URL into screenshots, UI item crops, and JSON manifests from Codex or the local CLI.
+SeparateWeb Capture is a Codex plugin that turns web pages into inspectable visual assets: full-page screenshots, grouped UI crops, and JSON manifests.
 
-## What This Plugin Contains
+Use it when Codex needs real page evidence before implementing or reviewing UI.
+
+## Status
+
+- Plugin name: `separateweb-capture`
+- Version: `0.1.1`
+- License: MIT
+- Runtime: Node.js `>=18`
+- Capture engine: Playwright + Sharp
+
+## What's Included
 
 ```text
-.codex-plugin/plugin.json          Codex plugin manifest
+.codex-plugin/plugin.json           Codex plugin manifest
 skills/separateweb-capture/SKILL.md Codex skill trigger and workflow
-scripts/capture.mjs                Playwright + Sharp capture CLI
-assets/icon.png                    Composer icon
-assets/logo.png                    Plugin logo
+scripts/capture.mjs                 Capture script
+assets/icon.png                     Composer icon
+assets/logo.png                     Plugin logo
+LICENSE                             MIT license
 ```
 
-The required Codex entrypoint is `.codex-plugin/plugin.json`. The skill in `skills/separateweb-capture/SKILL.md` tells Codex when to run this plugin and which script command to use.
-
-## Install
-
-```bash
-npm install
-```
-
-Optional global command for local development:
-
-```bash
-npm link
-```
+The required Codex entrypoint is `.codex-plugin/plugin.json`. The skill in `skills/separateweb-capture/SKILL.md` defines when Codex should use this plugin.
 
 ## Codex Usage
 
@@ -45,7 +44,7 @@ node scripts/capture.mjs capture <url>
 node scripts/capture.mjs patch <dir>
 ```
 
-## CLI Usage
+## Commands
 
 ```bash
 separateweb capture <url> [--out <dir>] [--width <px>] [--height <px>] [--max-pages <n>] [--single|--all]
@@ -55,13 +54,7 @@ separateweb select <manifest.json>
 separateweb create <manifest.json> --items <indexes> --path <dir>
 ```
 
-Without `npm link`, use:
-
-```bash
-node scripts/capture.mjs capture https://example.com --single
-```
-
-## Capture Behavior
+## Capture Rules
 
 - `capture https://example.com` crawls same-origin paths.
 - `capture https://example.com/` crawls same-origin paths.
@@ -90,18 +83,17 @@ captures/<jobId>/manifest.json
 captures/<jobId>/items/<kind>/*.png
 ```
 
-## Options
+## Selection Workflow
 
-```bash
-separateweb capture https://example.com --out captures --width 1440 --height 1000 --max-pages 20
-separateweb capture https://example.com --single
-separateweb capture https://example.com/docs --all
-```
-
-## Select And Export Items
+List manifest items:
 
 ```bash
 separateweb select captures/<jobId>/page-001-<slug>/manifest.json
+```
+
+Export selected items:
+
+```bash
 separateweb create captures/<jobId>/page-001-<slug>/manifest.json --items 1,3,5 --path /Users/onecrop/Desktop/patches
 ```
 
@@ -117,24 +109,18 @@ Clear it:
 separateweb patch --clear
 ```
 
-## Validate
+## Validation
 
 ```bash
 npm run check
 node scripts/capture.mjs --help
 ```
 
-## Publish
+## Troubleshooting
 
-```bash
-npm publish --access public
-```
-
-Install from npm:
-
-```bash
-npm install -g separateweb-capture
-```
+- If capture fails, report the exact error from `scripts/capture.mjs`.
+- If output is missing, check the printed `Manifest` path first.
+- If selected items do not export, confirm the manifest path and `--items` indexes.
 
 ## License
 
