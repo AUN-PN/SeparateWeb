@@ -1,0 +1,10 @@
+.nuxt
+.output
+node_modules
+dist
+.data
+.env
+.env.*
+!.env.example
+public/exports/*
+!public/exports/.gitkeep
