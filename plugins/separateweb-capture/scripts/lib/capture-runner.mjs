@@ -163,6 +163,54 @@ const isLowSignalImage = async (buffer) => {
   return Boolean(alpha && alpha.max < 32)
 }
 
+const applyAlphaTrim = async (buffer, trim) => {
+  if (!trim) return buffer
+
+  return sharp(buffer)
+    .extract({
+      left: trim.x,
+      top: trim.y,
+      width: trim.width,
+      height: trim.height
+    })
+    .png()
+    .toBuffer()
+}
+
+const applyOutputCut = async (buffer, trim, outputBuffer) => {
+  const trimmed = await applyAlphaTrim(buffer, trim)
+  const textRaw = await sharp(trimmed)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  const outputAlpha = await sharp(outputBuffer)
+    .ensureAlpha()
+    .extractChannel('alpha')
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+
+  if (
+    textRaw.info.width !== outputAlpha.info.width
+    || textRaw.info.height !== outputAlpha.info.height
+  ) {
+    throw new Error('Output alpha mask dimensions do not match text crop')
+  }
+
+  for (let index = 0, pixel = 0; index < textRaw.data.length; index += 4, pixel += 1) {
+    textRaw.data[index + 3] = outputAlpha.data[pixel]
+  }
+
+  return sharp(textRaw.data, {
+    raw: {
+      width: textRaw.info.width,
+      height: textRaw.info.height,
+      channels: 4
+    }
+  })
+    .png()
+    .toBuffer()
+}
+
 export const capturePage = async (browser, url, outputDir, options) => {
   const width = normalizeDimension(options.width, '--width')
   const height = normalizeDimension(options.height, '--height')
@@ -226,7 +274,6 @@ export const capturePage = async (browser, url, outputDir, options) => {
       const maskRadii = visualCornerRadii(item, cornerRadii, cropWidth, cropHeight)
       const useBrowserShape = Boolean(isolatedScreenshotBuffer) && shouldUseBrowserShape(item)
       const mask = useBrowserShape ? null : roundedMask(cropWidth, cropHeight, maskRadii)
-      const textMask = roundedMask(cropWidth, cropHeight, maskRadii)
 
       await mkdir(kindDir, { recursive: true })
       const crop = mediaSource
@@ -263,24 +310,13 @@ export const capturePage = async (browser, url, outputDir, options) => {
           height: cropHeight
         })
 
-      if (textMask) {
-        textCrop
-          .ensureAlpha()
-          .composite([{
-            input: await sharp(textMask)
-              .resize(cropWidth, cropHeight, { fit: 'fill' })
-              .png()
-              .toBuffer(),
-            blend: 'dest-in'
-          }])
-      }
-
       let outputBuffer = await crop
         .png()
         .toBuffer()
-      let textOutputBuffer = await textCrop
+      const rawTextOutputBuffer = await textCrop
         .png()
         .toBuffer()
+      let textOutputBuffer = rawTextOutputBuffer
 
       if (await isLowSignalImage(outputBuffer)) continue
 
@@ -292,9 +328,13 @@ export const capturePage = async (browser, url, outputDir, options) => {
             alphaThreshold: null
           }
       const textAlphaCleanup = useBrowserShape
-        ? await cleanupAlphaHalo(textOutputBuffer, alphaCleanupThreshold(item))
+        ? {
+            buffer: await applyOutputCut(rawTextOutputBuffer, alphaCleanup.trim, alphaCleanup.buffer),
+            trim: alphaCleanup.trim,
+            alphaThreshold: alphaCleanup.alphaThreshold
+          }
         : {
-            buffer: textOutputBuffer,
+            buffer: await applyOutputCut(rawTextOutputBuffer, null, alphaCleanup.buffer),
             trim: null,
             alphaThreshold: null
           }
