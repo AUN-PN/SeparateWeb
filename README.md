@@ -38,26 +38,30 @@ Install the skill payload with `npx`:
 
 ```bash
 npx separateweb-capture
+npx separateweb-capture --target claude
+npx separateweb-capture --target both
 ```
+
+Default target is Codex. Use `--target claude` for Claude Code personal skills, or `--target both` for Codex and Claude.
 
 ## Use
 
 Set a default destination for future captures:
 
 ```bash
-$separateweb-capture patch /absolute/output/path
+npx separateweb-capture patch /absolute/output/path
 ```
 
 Capture one page:
 
 ```bash
-$separateweb-capture https://example.com --single
+npx separateweb-capture capture https://example.com --single
 ```
 
 Capture a root URL and crawl same-origin pages:
 
 ```bash
-$separateweb-capture https://example.com
+npx separateweb-capture capture https://example.com
 ```
 
 Supported command options:
@@ -72,7 +76,7 @@ Supported command options:
 --help
 ```
 
-The package binaries are `separateweb` and `separateweb-capture`. Use `separateweb-capture` to install the local skill payload. Use `separateweb` to run capture commands through `npx`.
+The package binaries are `separateweb` and `separateweb-capture`. Use `npx separateweb-capture` when the binary is not installed globally. Use `separateweb` after `npm link` or global install.
 
 ## Example Capture
 

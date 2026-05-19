@@ -21,5 +21,5 @@ export const installLocalSkill = async (target) => {
   targets.forEach(([label, skillPath]) => {
     console.log(`- ${label}: ${skillPath}`)
   })
-  console.log('Use: separateweb capture https://example.com --single')
+  console.log('Use: npx separateweb-capture capture https://example.com --single')
 }

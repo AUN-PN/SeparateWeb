@@ -10,11 +10,14 @@ export const usage = () => {
   separateweb create <manifest.json> --items <indexes> --path <dir>
   separateweb install-skill [--target codex|claude|both]
   separateweb-capture [--target codex|claude|both]
+  npx separateweb-capture capture <url>
   node scripts/capture.mjs capture <url>
 
 Example:
   npx separateweb-capture
+  npx separateweb-capture --target claude
   npx separateweb-capture --target both
+  npx separateweb-capture capture https://demo.separateweb.dev/ --single
   separateweb patch /absolute/output/path
   separateweb capture https://demo.separateweb.dev/
   separateweb capture https://demo.separateweb.dev/orbit-store --single

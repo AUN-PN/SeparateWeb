@@ -9,14 +9,30 @@ Use this skill when the user asks:
 
 ```text
 separateweb capture <url>
+npx separateweb-capture capture <url>
 separateweb patch <path>
 ```
 
-If installed as a local skill through `npx`, run the package CLI:
+Use `npx` when the package is not linked globally. This is the safest default for Claude Code personal skills:
 
 ```bash
-$separateweb-capture <url>
-$separateweb-capture patch <path>
+npx separateweb-capture capture <url>
+npx separateweb-capture patch <path>
+```
+
+Use `separateweb-capture` with no capture command only to install the local skill payload:
+
+```bash
+npx separateweb-capture
+npx separateweb-capture --target claude
+npx separateweb-capture --target both
+```
+
+If `separateweb` is installed or linked globally, this shorthand is also valid:
+
+```bash
+separateweb capture <url>
+separateweb patch <path>
 ```
 
 If running from the plugin root, the local script is also valid:
@@ -50,18 +66,18 @@ Capture behavior:
 Examples:
 
 ```bash
-node scripts/capture.mjs capture https://domain.com
-node scripts/capture.mjs capture https://domain.com --single
-node scripts/capture.mjs capture https://domain.com/about
-node scripts/capture.mjs capture https://domain.com/about --all
+npx separateweb-capture capture https://domain.com
+npx separateweb-capture capture https://domain.com --single
+npx separateweb-capture capture https://domain.com/about
+npx separateweb-capture capture https://domain.com/about --all
 ```
 
 Patch selection:
 
 ```bash
-node scripts/capture.mjs patch /absolute/output/path
-node scripts/capture.mjs select captures/<jobId>/manifest.json
-node scripts/capture.mjs create captures/<jobId>/manifest.json --items 1,3,5 --path /absolute/output/path
+npx separateweb-capture patch /absolute/output/path
+npx separateweb-capture select captures/<jobId>/manifest.json
+npx separateweb-capture create captures/<jobId>/manifest.json --items 1,3,5 --path /absolute/output/path
 ```
 
 Use `patch <path>` to set the default machine path where future `capture` outputs are written. Use `create` only when exporting selected items from an existing manifest.
