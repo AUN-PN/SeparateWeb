@@ -1,8 +1,8 @@
 # SeparateWeb Capture
 
-Website screenshot, web page capture, and UI crop extraction for Codex.
+Website screenshot, web page capture, and agent-ready UI extraction for Codex.
 
-SeparateWeb Capture is a Codex plugin that turns web pages into inspectable visual assets: full-page screenshots, grouped UI crops, and JSON manifests.
+SeparateWeb Capture is a Codex plugin that turns web pages into inspectable evidence: full-page screenshots, UI crops, DOM snapshots, accessibility trees, selectors, actions, replay metadata, and animation artifacts.
 
 Use it when Codex needs real page evidence before implementing or reviewing UI.
 
@@ -73,6 +73,8 @@ Supported command options:
 --max-pages <n>
 --single
 --all
+--states auto
+--state-limit <n>
 --help
 ```
 
@@ -90,10 +92,10 @@ Output:
 
 ```text
 Captured: captures/2026-05-18T21-39-53-265Z-index-html-4ed73889
+Manifest: captures/2026-05-18T21-39-53-265Z-index-html-4ed73889/site-manifest.json
 Pages: 1
 Succeeded: 1
 Failed: 0
-Blocks: 36
 ```
 
 Detected item groups:
@@ -117,16 +119,66 @@ Full-page capture:
 
 ![Orbit Store full-page capture](docs/examples/orbit-store/full-page.png)
 
-Capture output now separates visual assets into two folders:
+## Output Layout
+
+Single-page captures write one job folder:
 
 ```text
-with-text/full-page.png
-with-text/items/<kind>/*.png
-without-text/full-page.png
-without-text/items/<kind>/*.png
+captures/<jobId>/
+  site-manifest.json
+  manifest.json
+  screenshots/
+    full-page.png
+    full-page.with-text.png
+    full-page.textless.png
+    full-page.without-text.png
+  crops/
+    with-text/items/<kind>/*.png
+    without-text/items/<kind>/*.png
+  replay/
+    dom-snapshot.html
+  evidence/
+    dom-snapshot.raw.html
+    accessibility-tree.json
+  animation/
+    animation-metadata.json
+    animation-preview.html
+    animation-preview.gif
+    animation-frames/*.png
 ```
 
-`manifest.json` keeps `items[].image.path` pointed at the current no-text crop, and adds `items[].textImage.path` for the matching with-text crop.
+Multi-page captures keep the same per-page shape under `pages/`:
+
+```text
+captures/<jobId>/
+  site-manifest.json
+  pages/
+    page-001-example-com/
+      manifest.json
+      screenshots/
+      crops/
+      replay/
+      evidence/
+      animation/
+    page-002-docs/
+      manifest.json
+      screenshots/
+      crops/
+      replay/
+      evidence/
+      animation/
+```
+
+`manifest.json` uses schema `2.0.0` with `captureKind: "agent-ready-ui"`. Important fields include `screenshots`, `elements`, `actions`, `crops`, `domSummary`, `domSnapshot`, `accessibilityTree`, `replay`, `states`, `animationMetadata`, `animationPreview`, and legacy-compatible `items`.
+
+`dom-snapshot.html` is the replay-safe HTML snapshot with scripts disabled and a replay `<base>` tag. `evidence/dom-snapshot.raw.html` preserves the raw captured HTML for debugging and audit evidence.
+
+Animation output has two layers:
+
+- `animation/animation-preview.html` and `animation/animation-preview.gif` show captured visual frames.
+- `animation/animation-metadata.json` records CSS/WAAPI animation and transition signals, event timelines, scroll phases, and before/after computed changes.
+
+Use `--states auto` to probe likely interactive controls and store extra screenshots under `states/`. Use `--state-limit <n>` to cap the number of captured states.
 
 Extracted UI items:
 
@@ -142,6 +194,10 @@ Extracted UI items:
 .codex-plugin/plugin.json           Codex plugin manifest
 skills/separateweb-capture/SKILL.md Codex skill trigger and workflow
 scripts/capture.mjs                 Capture script
+scripts/lib/capture-runner.mjs      Capture orchestration
+scripts/lib/animation-capture.mjs   Animation preview and metadata capture
+scripts/lib/capture-items.mjs       UI crop extraction
+scripts/lib/dom-capture.mjs         DOM snapshot and accessibility capture
 assets/icon.png                     Composer icon
 assets/logo.png                     Plugin logo
 LICENSE                             MIT license
@@ -154,6 +210,8 @@ The required Codex entrypoint is `.codex-plugin/plugin.json`. The skill in `skil
 - Website screenshot tool for frontend teams
 - Playwright screenshot capture for visual QA
 - UI crop extraction from live web pages
+- DOM, accessibility, selector, action, and replay metadata for agents
+- Animation and transition evidence capture
 - Web design asset capture for implementation references
 - AI coding agent visual context from real URLs
 - Codex plugin for webpage inspection
@@ -167,6 +225,7 @@ separateweb capture https://example.com
 separateweb capture https://example.com --single
 separateweb capture https://example.com/docs
 separateweb capture https://example.com/docs --all
+separateweb capture https://example.com --single --states auto --state-limit 3
 separateweb patch /absolute/output/path
 ```
 
@@ -180,11 +239,12 @@ node scripts/capture.mjs patch <dir>
 ## Commands
 
 ```bash
-separateweb capture <url> [--out <dir>] [--width <px>] [--height <px>] [--max-pages <n>] [--single|--all]
+separateweb capture <url> [--out <dir>] [--width <px>] [--height <px>] [--max-pages <n>] [--single|--all] [--states auto] [--state-limit <n>]
 separateweb patch <dir>
 separateweb patch --clear
 separateweb select <manifest.json>
 separateweb create <manifest.json> --items <indexes> --path <dir>
+separateweb install-skill [--target codex|claude|both]
 ```
 
 ## Capture Rules
@@ -195,11 +255,15 @@ separateweb create <manifest.json> --items <indexes> --path <dir>
 - `capture https://example.com/docs` captures only `/docs`.
 - `capture https://example.com/docs --all` crawls same-origin paths starting from `/docs`.
 - `--max-pages` accepts `1` to `200`.
+- `--states auto` captures interactive state screenshots when controls produce a distinct page state.
+- `--state-limit` accepts up to `20`.
 
 ## Troubleshooting
 
 - If capture fails, report the exact error from `scripts/capture.mjs`.
 - If output is missing, check the printed `Manifest` path first.
+- For a single-page run, read `site-manifest.json`, then `manifest.json`.
+- For a multi-page run, read `site-manifest.json`, then each `pages[].manifestPath`.
 - If selected items do not export, confirm the manifest path and `--items` indexes.
 
 ## License
