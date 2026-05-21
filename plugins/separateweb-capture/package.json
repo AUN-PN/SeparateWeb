@@ -1,9 +1,18 @@
 {
   "name": "separateweb-capture",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Website screenshot and UI crop extraction for Codex using Playwright and Sharp.",
   "type": "module",
   "license": "MIT",
+  "homepage": "https://github.com/AUN-PN/SeparateWeb/tree/main/plugins/separateweb-capture",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AUN-PN/SeparateWeb.git",
+    "directory": "plugins/separateweb-capture"
+  },
+  "bugs": {
+    "url": "https://github.com/AUN-PN/SeparateWeb/issues"
+  },
   "keywords": [
     "capture",
     "screenshot",
