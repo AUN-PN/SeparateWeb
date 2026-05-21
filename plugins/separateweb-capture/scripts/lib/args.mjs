@@ -3,7 +3,7 @@ import { fail } from './errors.mjs'
 
 export const usage = () => {
   console.log(`Usage:
-  separateweb capture <url> [--out <dir>] [--width <px>] [--height <px>] [--max-pages <n>] [--single|--all]
+  separateweb capture <url> [--out <dir>] [--width <px>] [--height <px>] [--max-pages <n>] [--single|--all] [--states auto] [--state-limit <n>]
   separateweb patch <dir>
   separateweb patch --clear
   separateweb select <manifest.json>
@@ -17,7 +17,7 @@ Example:
   npx separateweb-capture
   npx separateweb-capture --target claude
   npx separateweb-capture --target both
-  npx separateweb-capture capture https://demo.separateweb.dev/ --single
+  npx separateweb-capture capture https://demo.separateweb.dev/ --single --states auto
   separateweb patch /absolute/output/path
   separateweb capture https://demo.separateweb.dev/
   separateweb capture https://demo.separateweb.dev/orbit-store --single
@@ -37,6 +37,8 @@ export const parseArgs = (argv) => {
     width: DEFAULT_VIEWPORT.width,
     height: DEFAULT_VIEWPORT.height,
     maxPages: DEFAULT_MAX_PAGES,
+    states: 'none',
+    stateLimit: 5,
     all: argv.includes('--all'),
     single: argv.includes('--single'),
     clear: argv.includes('--clear'),
@@ -86,6 +88,24 @@ export const parseArgs = (argv) => {
     if (arg === '--max-pages') {
       if (!next) fail('--max-pages requires a number')
       options.maxPages = Number(next)
+      index += 1
+      continue
+    }
+
+    if (arg === '--states') {
+      if (!next || next.startsWith('--')) {
+        options.states = 'auto'
+        continue
+      }
+      if (!['auto', 'none'].includes(next)) fail('--states must be auto or none')
+      options.states = next
+      index += 1
+      continue
+    }
+
+    if (arg === '--state-limit') {
+      if (!next) fail('--state-limit requires a number')
+      options.stateLimit = Number(next)
       index += 1
       continue
     }
